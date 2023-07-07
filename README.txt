@@ -47,4 +47,13 @@ else
 fi
 
 
+data "google_service_account_key" "my_key" {
+  account_id = "<SERVICE_ACCOUNT_ID>"
+  project    = "<PROJECT_ID>"
+}
+
+output "service_account_key_file" {
+  value = data.google_service_account_key.my_key.private_key_data
+}
+
 
