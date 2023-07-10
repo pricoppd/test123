@@ -31,3 +31,14 @@ resource "null_resource" "set_image_user_access" {
   # Run the provisioner only when google_project_id is different from source_image_project
   only_if = var.google_project_id != var.source_image_project
 }
+
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+data "google_project" "current" {
+  project_id = "your-project-id"
+}
+
+output "project_number" {
+  value = data.google_project.current.number
+}
