@@ -22,3 +22,8 @@ gcloud compute images set-iam-policy {{ image_to_deploy }} \
     --member=serviceAccount:{{ sa_gcp_deployment_automation }}@{{ google_project_id }}.iam.gserviceaccount.com \
     --member=serviceAccount:{{ get_project_details.json.projectNumber }}@cloudservices.gserviceaccount.com \
     --role=roles/compute.imageUser
+
+
+resource "external" "run_script" {
+  program = ["sh", "-c", "VAR1=${var.variable1} VAR2=${var.variable2} ${path.module}/script.sh"]
+}
