@@ -48,3 +48,15 @@ resource "local_file" "my_service_account_json" {
   content = data.google_service_account_key.my_service_account.private_key
   filename = "my_service_account.json"
 }
+#!/bin/bash
+
+# Run the command and capture the output
+output=$(gcloud iam service-accounts keys list --iam-account=paul@gcp.com --format="value(name)")
+
+# Extract the latest key ID from the output
+latest_key_id=$(echo "$output" | awk -F '/' '{print $NF}')
+
+# Print the latest key ID
+echo "Latest Key ID: $latest_key_id"
+
+# You can now use the $latest_key_id variable in further operations
