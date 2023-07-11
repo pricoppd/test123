@@ -37,3 +37,14 @@ resource "null_resource" "run_script" {
     EOF
   }
 }
+#####################################################################################################
+
+data "google_service_account_key" "my_service_account" {
+  project = "my-project"
+  service_account_email = "my-service-account@my-project.iam.gserviceaccount.com"
+}
+
+resource "local_file" "my_service_account_json" {
+  content = data.google_service_account_key.my_service_account.private_key
+  filename = "my_service_account.json"
+}
