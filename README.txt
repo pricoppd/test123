@@ -60,3 +60,21 @@ latest_key_id=$(echo "$output" | awk -F '/' '{print $NF}')
 echo "Latest Key ID: $latest_key_id"
 
 # You can now use the $latest_key_id variable in further operations
+
+
+
+####################################################
+
+#!/bin/bash
+
+# Run the command and capture the output
+output=$(gcloud iam service-accounts keys list --iam-account=paul@gcp.com --format="value(name,validAfterTime)" --sort-by="~validAfterTime")
+
+# Extract the latest key ID from the output
+latest_key_id=$(echo "$output" | head -n 1 | awk '{print $1}')
+
+# Print the latest key ID
+echo "Latest Key ID: $latest_key_id"
+
+# You can now use the $latest_key_id variable in further operations
+
