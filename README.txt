@@ -27,3 +27,13 @@ gcloud compute images set-iam-policy {{ image_to_deploy }} \
 resource "external" "run_script" {
   program = ["sh", "-c", "VAR1=${var.variable1} VAR2=${var.variable2} ${path.module}/script.sh"]
 }
+
+##########################################################################################################
+
+resource "null_resource" "run_script" {
+  provisioner "local-exec" {
+    command = <<EOF
+      bash -c 'VAR1="${var.variable1}" VAR2="${var.variable2}" path/to/script.sh "$VAR1" "$VAR2"'
+    EOF
+  }
+}
