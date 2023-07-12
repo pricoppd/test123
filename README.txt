@@ -95,4 +95,30 @@ resource "null_resource" "command_execution" {
     EOT
   }
 }
+#######################################################################
+
+pipeline {
+    agent any
+
+    parameters {
+        booleanParam(name: 'runStage', defaultValue: false, description: 'Run Groovy stage')
+    }
+
+    stages {
+        stage('Conditional Stage') {
+            steps {
+                script {
+                    if (params.runStage) {
+                        // Add your Groovy stage here
+                        echo 'Running Groovy stage...'
+                        // Additional Groovy stage steps
+                    } else {
+                        echo 'Skipping Groovy stage...'
+                    }
+                }
+            }
+        }
+        // Additional stages
+    }
+}
 
