@@ -78,3 +78,21 @@ echo "Latest Key ID: $latest_key_id"
 
 # You can now use the $latest_key_id variable in further operations
 
+
+#######################################################################################
+
+resource "null_resource" "command_execution" {
+  provisioner "local-exec" {
+    command = <<-EOT
+      echo "Running command 1"
+      command_1
+
+      echo "Running command 2"
+      command_2
+
+      echo "Running command 3"
+      command_3
+    EOT
+  }
+}
+
