@@ -122,3 +122,14 @@ pipeline {
     }
 }
 
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+folder_name="my_folder"
+
+if [ ! -d "$folder_name" ]; then
+    mkdir "$folder_name"
+    echo "Folder created: $folder_name"
+else
+    rm -rf "$folder_name"
+    echo "Folder removed: $folder_name"
+fi
