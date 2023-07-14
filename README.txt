@@ -133,3 +133,14 @@ else
     rm -rf "$folder_name"
     echo "Folder removed: $folder_name"
 fi
+
+########################################################################
+
+resource "google_compute_image_iam_binding" "image_access" {
+  image    = "<your-project-id>/<zone>/<image-name>"
+  role     = "roles/compute.imageUser"
+
+  members = [
+    "serviceAccount:<service-account-email>"
+  ]
+}
