@@ -144,3 +144,12 @@ resource "google_compute_image_iam_binding" "image_access" {
     "serviceAccount:<service-account-email>"
   ]
 }
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+resource "google_compute_instance" "example_instance" {
+  # Your instance configuration...
+
+  metadata {
+    metadata = jsondecode(file("${path.module}/metadata.json"))
+  }
+}
