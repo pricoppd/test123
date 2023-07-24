@@ -1,0 +1,65 @@
+import json
+
+def read_key_value_pairs(filename):
+    with open(filename, 'r') as file:
+        lines = file.readlines()
+
+    key_value_pairs = {}
+    for line in lines:
+        line = line.strip()
+        if line:
+            try:
+                key, value = line.split(' : ', 1)
+                key_value_pairs[key] = value
+            except ValueError:
+                print(f"Error: Invalid format in line '{line}' of file '{filename}'")
+                print("Each line should be in the 'key : value' format.")
+                exit(1)
+
+    return key_value_pairs
+
+def update_mainfile(mainfile, other_files):
+    main_data = read_key_value_pairs(mainfile)
+
+    for other_file in other_files:
+        other_data = read_key_value_pairs(other_file)
+        for key in main_data:
+            if key in other_data:
+                main_data[key] = other_data[key]
+
+    with open(mainfile, 'w') as file:
+        for key, value in main_data.items():
+            file.write(f"{key} : {value}\n")
+
+def convert_to_tfvars_format(value):
+    if value.lower() == 'true' or value.lower() == 'false':
+        return value.lower()
+    elif value.lower() == 'null':
+        return "null"
+    elif value.isdigit() or (value.startswith('-') and value[1:].isdigit()):
+        return value
+    else:
+       return '"' + value.strip('"') + '"'
+
+def convert_mainfile_to_tfvars(mainfile, tfvars_file):
+    with open(mainfile, 'r') as file:
+        lines = file.readlines()
+
+    tfvars_data = {}
+    for line in lines:
+        key, value = line.strip().split(' : ')
+        key = key.strip("\"")
+        value = convert_to_tfvars_format(value)
+        tfvars_data[key] = value
+
+    with open(tfvars_file, 'w') as file:
+        for key, value in tfvars_data.items():
+            file.write(f'{key} = {value}\n')
+
+if __name__ == "__main__":
+    mainfile = "mainfile.txt"
+    other_files = ["file1.json", "file2.json", "file3.json"]
+    update_mainfile(mainfile, other_files)
+
+    tfvars_file = "mainfile.tfvars"
+    convert_mainfile_to_tfvars(mainfile, tfvars_file)
