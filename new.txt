@@ -1,4 +1,5 @@
 import json
+import glob
 
 def read_key_value_pairs(filename):
     with open(filename, 'r') as file:
@@ -39,7 +40,7 @@ def convert_to_tfvars_format(value):
     elif value.isdigit() or (value.startswith('-') and value[1:].isdigit()):
         return value
     else:
-       return '"' + value.strip('"') + '"'
+        return '"' + value.strip('"') + '"'
 
 def convert_mainfile_to_tfvars(mainfile, tfvars_file):
     with open(mainfile, 'r') as file:
@@ -58,8 +59,14 @@ def convert_mainfile_to_tfvars(mainfile, tfvars_file):
 
 if __name__ == "__main__":
     mainfile = "mainfile.txt"
-    other_files = ["file1.json", "file2.json", "file3.json"]
+
+    # Use glob to find all JSON files in the current directory
+    other_files = glob.glob("*.json")
+
+    # Exclude the mainfile from the list of JSON files
+    other_files = [file for file in other_files if file != mainfile]
+
     update_mainfile(mainfile, other_files)
 
-    tfvars_file = "mainfile.tfvars"
+    tfvars_file = "main.auto.tfvars"
     convert_mainfile_to_tfvars(mainfile, tfvars_file)
