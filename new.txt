@@ -15,7 +15,7 @@ def merge_txt_files(current_path, output_filename):
 
 if __name__ == "__main__":
     current_path = "."  # Set the current path to the directory where the .txt files are located
-    output_filename = "merged_file.txt"  # Specify the name of the output file
+    output_filename = "main.auto.tfvars"  # Specify the name of the output file as main.auto.tfvars
 
     merge_txt_files(current_path, output_filename)
 
