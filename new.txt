@@ -1,5 +1,43 @@
 import os
 
+def merge_txt_files(current_path, output_filename):
+    merged_content = ""
+
+    for filename in os.listdir(current_path):
+        if filename.endswith(".txt"):
+            filepath = os.path.join(current_path, filename)
+            with open(filepath, "r") as file:
+                content = file.read()
+                merged_content += content.strip() + "\n\n"
+
+    with open(output_filename, "w") as output_file:
+        output_file.write(merged_content)
+
+if __name__ == "__main__":
+    current_path = "."  # Set the current path to the directory where the .txt files are located
+    output_filename = "merged_file.txt"  # Specify the name of the output file
+
+    merge_txt_files(current_path, output_filename)
+
+    print("Merged content has been written to", output_filename)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+################################################
+
+import os
+
 def combine_text_files_to_txt():
     input_path = os.getcwd()  # Use the current working directory as the input path
     output_file = "combined.txt"
