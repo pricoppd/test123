@@ -39,3 +39,58 @@ def combine_text_files_to_txt():
 
 if __name__ == "__main__":
     combine_text_files_to_txt()
+
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+combined tags
+
+import os
+
+def combine_text_files_to_tfvars():
+    input_path = os.getcwd()  # Use the current working directory as the input path
+    output_file = "main.auto.tfvars"
+
+    combined_data = {}
+    combined_tags = []
+
+    # List all files in the input path with the .txt extension
+    txt_files = [file for file in os.listdir(input_path) if file.endswith(".txt")]
+
+    for txt_file in txt_files:
+        file_path = os.path.join(input_path, txt_file)
+        if os.path.isfile(file_path):  # Verify that the file exists and is a regular file
+            with open(file_path, "r") as f:
+                try:
+                    lines = f.readlines()
+                    in_tags_section = False
+                    for line in lines:
+                        line = line.strip()
+                        if line.startswith("tags = ["):
+                            in_tags_section = True
+                        elif line.startswith("]"):
+                            in_tags_section = False
+                        elif in_tags_section:
+                            tag = line.strip('",')
+                            if tag:
+                                combined_tags.append(tag)
+                        elif ":" in line:
+                            key, value = map(str.strip, line.split(":", 1))
+                            combined_data[key] = value.strip('",')
+                except Exception as e:
+                    print(f"Error: Unable to read data from {txt_file}. Reason: {str(e)}")
+        else:
+            print(f"Error: {txt_file} is not a valid file.")
+
+    # Add the combined tags list to the combined data
+    combined_data["tags"] = combined_tags
+
+    # Write the combined data to the main.auto.tfvars file
+    with open(output_file, "w") as f:
+        for key, value in combined_data.items():
+            f.write(f'{key} = "{value}"\n')
+
+    print(f"Data from {len(txt_files)} files has been combined, and tags are merged into one list.")
+    print(f"Combined data saved to {output_file}.")
+
+if __name__ == "__main__":
+    combine_text_files_to_tfvars()
