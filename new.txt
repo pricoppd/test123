@@ -94,3 +94,93 @@ def combine_text_files_to_tfvars():
 
 if __name__ == "__main__":
     combine_text_files_to_tfvars()
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+
+import os
+
+def combine_text_files_to_tfvars():
+    input_path = os.getcwd()  # Use the current working directory as the input path
+    output_file = "main.auto.tfvars"
+
+    combined_data = {}
+    combined_tags = []
+    combined_metadata = {}
+    combined_labels = {}
+
+    # List all files in the input path with the .txt extension
+    txt_files = [file for file in os.listdir(input_path) if file.endswith(".txt")]
+
+    for txt_file in txt_files:
+        in_tags = False
+        in_metadata = False
+        in_labels = False
+        file_path = os.path.join(input_path, txt_file)
+        if os.path.isfile(file_path):  # Verify that the file exists and is a regular file
+            with open(file_path, "r") as f:
+                try:
+                    lines = f.readlines()
+                    for line in lines:
+                        line = line.strip()
+
+                        # Skip comment lines
+                        if line.startswith("#"):
+                            continue
+
+                        if ":" in line:
+                            key, value = map(str.strip, line.split(":"))
+                            combined_data[key.strip('"')] = value.strip('"')
+                        elif line.startswith('"tags" = ['):
+                            in_tags = True
+                        elif "]" in line:
+                            in_tags = False
+                        elif in_tags and line != 'tags = [':
+                            tags = line.strip().strip('"')
+                            if tags:
+                                combined_tags.append(tags)
+                        elif line.startswith('"metadata" = {'):
+                            in_metadata = True
+                        elif "}" in line:
+                            in_metadata = False
+                        elif in_metadata and "=" in line:
+                            key, value = map(str.strip, line.split("="))
+                            combined_metadata[key.strip('"')] = value.strip('",')
+                        elif line.startswith('"labels" = {'):
+                            in_labels = True
+                        elif "}" in line:
+                            in_labels = False
+                        elif in_labels and "=" in line:
+                            key, value = map(str.strip, line.split("="))
+                            combined_labels[key.strip('"')] = value.strip('",')
+                except Exception as e:
+                    print(f"Error: Unable to read data from {txt_file}. Reason: {str(e)}")
+        else:
+            print(f"Error: {txt_file} is not a valid file.")
+
+    # Add the combined tags, metadata, and labels to the combined data
+    combined_data["tags"] = combined_tags
+    combined_data["metadata"] = combined_metadata
+    combined_data["labels"] = combined_labels
+
+    # Write the combined data to the main.auto.tfvars file
+    with open(output_file, "w") as f:
+        for key, value in combined_data.items():
+            if isinstance(value, list):
+                # Write list elements as a list
+                value_str = ", ".join(f'"{v}"' for v in value)
+                f.write(f'{key} = [{value_str}]\n')
+            elif isinstance(value, dict):
+                # Write dictionary with indentation
+                f.write(f"{key} = {{\n")
+                for k, v in value.items():
+                    f.write(f'    "{k}" = "{v}",\n')
+                f.write("}\n")
+            else:
+                f.write(f'{key} = "{value}"\n')
+
+    print(f"Data from {len(txt_files)} files has been combined.")
+    print(f"Combined data saved to {output_file}.")
+
+if __name__ == "__main__":
+    combine_text_files_to_tfvars()
