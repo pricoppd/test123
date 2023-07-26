@@ -1,72 +1,41 @@
-import json
-import glob
+import os
 
-def read_key_value_pairs(filename):
-    with open(filename, 'r') as file:
-        lines = file.readlines()
+def combine_text_files_to_txt():
+    input_path = os.getcwd()  # Use the current working directory as the input path
+    output_file = "combined.txt"
 
-    key_value_pairs = {}
-    for line in lines:
-        line = line.strip()
-        if line:
-            try:
-                key, value = line.split(' : ', 1)
-                key_value_pairs[key] = value
-            except ValueError:
-                print(f"Error: Invalid format in line '{line}' of file '{filename}'")
-                print("Each line should be in the 'key : value' format.")
-                exit(1)
+    combined_data = ""
 
-    return key_value_pairs
+    # List all files in the input path with the .txt extension
+    txt_files = [file for file in os.listdir(input_path) if file.endswith(".txt")]
 
-def update_mainfile(mainfile, other_files):
-    main_data = read_key_value_pairs(mainfile)
+    for txt_file in txt_files:
+        file_path = os.path.join(input_path, txt_file)
+        if os.path.isfile(file_path):  # Verify that the file exists and is a regular file
+            with open(file_path, "r") as f:
+                try:
+                    file_content = f.read()
+                    combined_data += file_content + "\n"
+                except Exception as e:
+                    print(f"Error: Unable to read data from {txt_file}. Reason: {str(e)}")
+        else:
+            print(f"Error: {txt_file} is not a valid file.")
 
-    for other_file in other_files:
-        other_data = read_key_value_pairs(other_file)
-        for key in main_data:
-            if key in other_data:
-                main_data[key] = other_data[key]
+    # Write the combined text data to a new text file
+    with open(output_file, "w") as f:
+        f.write(combined_data)
 
-    with open(mainfile, 'w') as file:
-        for key, value in main_data.items():
-            file.write(f"{key} : {value}\n")
+    # Convert the combined.txt to main.auto.tfvars
+    auto_tfvars_file = "main.auto.tfvars"
+    auto_tfvars_file_path = os.path.join(input_path, auto_tfvars_file)
 
-def convert_to_tfvars_format(value):
-    if value.lower() == 'true' or value.lower() == 'false':
-        return value.lower()
-    elif value.lower() == 'null':
-        return "null"
-    elif value.isdigit() or (value.startswith('-') and value[1:].isdigit()):
-        return value
-    else:
-        return '"' + value.strip('"') + '"'
-
-def convert_mainfile_to_tfvars(mainfile, tfvars_file):
-    with open(mainfile, 'r') as file:
-        lines = file.readlines()
-
-    tfvars_data = {}
-    for line in lines:
-        key, value = line.strip().split(' : ')
-        key = key.strip("\"")
-        value = convert_to_tfvars_format(value)
-        tfvars_data[key] = value
-
-    with open(tfvars_file, 'w') as file:
-        for key, value in tfvars_data.items():
-            file.write(f'{key} = {value}\n')
+    try:
+        os.rename(output_file, auto_tfvars_file_path)
+        print(f"{output_file} has been converted to {auto_tfvars_file}.")
+    except FileNotFoundError:
+        print(f"Error: {output_file} not found.")
+    except FileExistsError:
+        print(f"Error: {auto_tfvars_file} already exists. Please rename or remove it and try again.")
 
 if __name__ == "__main__":
-    mainfile = "mainfile.txt"
-
-    # Use glob to find all JSON files in the current directory
-    other_files = glob.glob("*.json")
-
-    # Exclude the mainfile from the list of JSON files
-    other_files = [file for file in other_files if file != mainfile]
-
-    update_mainfile(mainfile, other_files)
-
-    tfvars_file = "main.auto.tfvars"
-    convert_mainfile_to_tfvars(mainfile, tfvars_file)
+    combine_text_files_to_txt()
