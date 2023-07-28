@@ -49,3 +49,47 @@ with open("main.auto.tfvars", "w") as main_file:
     main_file.writelines(main_data)
 
 print("Information from 'general.txt' copied to 'main.auto.tfvars', and data from 'app.txt' and 'overwrite.txt' is overwritten.")
+
+
+
+
+###############################################################
+main.auto.tfvars is in json format
+
+import json
+import os
+
+def read_data_from_file(file_path):
+    if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+        with open(file_path, "r") as file:
+            try:
+                return json.load(file)
+            except json.JSONDecodeError as e:
+                print(f"Error: Unable to read valid JSON data from {file_path}.")
+                print(e)
+    return {}
+
+def write_data_to_file(file_path, data):
+    with open(file_path, "w") as file:
+        json.dump(data, file, indent=4)
+
+# Read data from "general.txt", "app.txt", and "overwrite.txt"
+general_data = read_data_from_file("general.txt")
+app_data = read_data_from_file("app.txt")
+overwrite_data = read_data_from_file("overwrite.txt")
+
+# Read data from "main.auto.tfvars"
+main_data = read_data_from_file("main.auto.tfvars")
+
+# Update main_data with data from "general.txt"
+main_data.update(general_data)
+
+# Update main_data with data from "app.txt" and "overwrite.txt" (overwrite if key exists)
+main_data.update(app_data)
+main_data.update(overwrite_data)
+
+# Write the updated main_data back to "main.auto.tfvars"
+write_data_to_file("main.auto.tfvars", main_data)
+
+print("Information from 'general.txt', 'app.txt', and 'overwrite.txt' copied to 'main.auto.tfvars'.")
+
