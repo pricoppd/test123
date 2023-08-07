@@ -99,8 +99,8 @@ maxAgeInDays=45
 # Authenticate to your Azure account
 az login
 
-# Get the current date
-currentDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+# Get the current date in epoch format
+currentEpoch=$(date -u +%s)
 
 # Get all the galleries in the specified resource group
 galleries=$(az sig list --resource-group $resourceGroupName --subscription $subscriptionId --query '[].name' --output tsv)
@@ -117,7 +117,6 @@ for gallery in $galleries; do
         creationDate=$(az sig image show --resource-group $resourceGroupName --gallery-name $gallery --gallery-image-definition $image --subscription $subscriptionId --query 'publishingProfile.publishingProfileType.creationDate' --output tsv)
         
         creationEpoch=$(date -d $creationDate +%s)
-        currentEpoch=$(date -d $currentDate +%s)
         ageInDays=$(( (currentEpoch - creationEpoch) / 86400 ))
         
         if [ $ageInDays -gt $maxAgeInDays ]; then
