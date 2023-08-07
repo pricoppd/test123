@@ -87,38 +87,49 @@ az logout
 
 \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-trigger:
-- main
+#!/bin/bash
 
-pr: none
+# Set your Azure subscription and resource group details
+subscriptionId="your-subscription-id"
+resourceGroupName="your-resource-group-name"
 
-pool:
-  vmImage: 'ubuntu-latest'
+# Set the maximum age (in days) for images to be considered for removal
+maxAgeInDays=45
 
-steps:
-- task: UsePythonVersion@0
-  inputs:
-    versionSpec: '3.x'
-    addToPath: true
+# Authenticate to your Azure account
+az login
 
-- script: |
-    # Set your Azure subscription and resource group details
-    subscriptionId="your-subscription-id"
-    resourceGroupName="your-resource-group-name"
+# Get the current date
+currentDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+# Get all the galleries in the specified resource group
+galleries=$(az sig list --resource-group $resourceGroupName --subscription $subscriptionId --query '[].name' --output tsv)
+
+# Iterate through each gallery
+for gallery in $galleries; do
+    echo "Checking images in gallery: $gallery"
     
-    # Set the script file path
-    scriptPath="path/to/your/script.sh"
+    # Get all the images in the current gallery
+    images=$(az sig image list --resource-group $resourceGroupName --gallery-name $gallery --subscription $subscriptionId --query '[].name' --output tsv)
     
-    # Authenticate to your Azure account
-    az login --service-principal --username $(SP_APP_ID) --password $(SP_PASSWORD) --tenant $(SP_TENANT_ID)
-    
-    # Execute the script
-    bash $scriptPath
-    
-    # Logout from the Azure account
-    az logout
-  displayName: 'Run Azure Image Cleanup Script'
-  env:
-    SP_APP_ID: $(servicePrincipalAppId)
-    SP_PASSWORD: $(servicePrincipalPassword)
-    SP_TENANT_ID: $(tenantId)
+    # Iterate through each image and check its creation date
+    for image in $images; do
+        creationDate=$(az sig image show --resource-group $resourceGroupName --gallery-name $gallery --gallery-image-definition $image --subscription $subscriptionId --query 'publishingProfile.publishingProfileType.creationDate' --output tsv)
+        
+        creationEpoch=$(date -d $creationDate +%s)
+        currentEpoch=$(date -d $currentDate +%s)
+        ageInDays=$(( (currentEpoch - creationEpoch) / 86400 ))
+        
+        if [ $ageInDays -gt $maxAgeInDays ]; then
+            echo "Removing image $image from gallery $gallery (created $creationDate)..."
+            
+            # Remove the image
+            az sig image-definition delete --resource-group $resourceGroupName --gallery-name $gallery --gallery-image-definition $image --subscription $subscriptionId --yes
+            
+            echo "Image removed."
+        fi
+    done
+done
+
+# Logout from the Azure account
+az logout
