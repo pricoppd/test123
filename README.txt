@@ -1,3 +1,28 @@
+$imagegallerydefinitioninfo = Get-AzGalleryImageDefinition -GalleryName $imagegallery.Name -ResourceGroupName $imagegallery.ResourceGroupName
+$imagegallerydefinitioninfo | ForEach-Object {
+    $imagegallerydefinitionname = $_.Name
+    $imagegalleryversion = Get-AzGalleryImageVersion -GalleryName $imagegallery.Name -ResourceGroupName $imagegallery.ResourceGroupName -GalleryImageDefinitionName $imagegallerydefinitionname
+
+    # Process the gallery image version here
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #!/bin/bash
 
 # Set your Azure subscription and resource group details
