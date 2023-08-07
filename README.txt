@@ -1,3 +1,72 @@
+# Define the number of days
+$days = 45
+
+# Get the image gallery
+$imageGallery = Get-AzGallery -ResourceGroupName <resourceGroupName> -GalleryName <galleryName>
+
+# Get all image definitions in the gallery
+$definitions = Get-AzGalleryImageDefinition -GalleryName $imageGallery.Name -ResourceGroupName $imageGallery.ResourceGroupName
+
+# Loop through each definition
+foreach ($definition in $definitions) {
+    # Get all image versions for the definition
+    $versions = Get-AzGalleryImageVersion -GalleryName $imageGallery.Name `
+                                          -ResourceGroupName $imageGallery.ResourceGroupName `
+                                          -GalleryImageDefinitionName $definition.Name
+
+    # Loop through each version
+    foreach ($version in $versions) {
+        # Check if the version was created more than X days ago
+        if ($version.PublishingProfile.PublishingProfileBase.PublishedDate -lt (Get-Date).AddDays(-$days)) {
+            # Remove the image version
+            Remove-AzGalleryImageVersion -GalleryName $imageGallery.Name `
+                                         -ResourceGroupName $imageGallery.ResourceGroupName `
+                                         -GalleryImageDefinitionName $definition.Name `
+                                         -GalleryImageVersionName $version.Name -Force
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 $imagegallerydefinitioninfo = Get-AzGalleryImageDefinition -GalleryName $imagegallery.Name -ResourceGroupName $imagegallery.ResourceGroupName
 $imagegallerydefinitioninfo | ForEach-Object {
     $imagegallerydefinitionname = $_.Name
