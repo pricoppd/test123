@@ -39,6 +39,51 @@ foreach ($image in $imageDefinitions) {
 
 
 
+
+
+
+#######################################################################
+# Set your Azure subscription and resource group details
+$subscriptionId = "your-subscription-id"
+$resourceGroupName = "your-resource-group-name"
+$galleryName = "your-gallery-name"
+
+# Set the maximum age (in days) for image definitions to be considered for removal
+$maxAgeInDays = 14
+
+# Authenticate to your Azure account (interactive login)
+Connect-AzAccount
+
+# Get the current date
+$currentDate = Get-Date
+
+# Get all the image definitions in the specified gallery
+$imageDefinitions = Get-AzGalleryImageDefinition -ResourceGroupName $resourceGroupName -GalleryName $galleryName
+
+# Iterate through each image definition and check its creation date
+foreach ($image in $imageDefinitions) {
+    $creationDate = $image.CreationDate
+    $ageInDays = ($currentDate - $creationDate).Days
+    
+    if ($ageInDays -gt $maxAgeInDays) {
+        $imageDefinitionName = $image.Name
+        Write-Host "Removing image definition $imageDefinitionName created $($creationDate.ToShortDateString())..."
+        
+        # Remove the image definition
+        Remove-AzGalleryImageDefinition -ResourceGroupName $resourceGroupName -GalleryName $galleryName -Name $imageDefinitionName -Force
+        
+        Write-Host "Image definition removed."
+    }
+}
+
+
+
+
+
+
+
+
+
 # Import the Azure PowerShell module
 Import-Module Az
 
