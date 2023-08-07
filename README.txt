@@ -1,21 +1,23 @@
-$imageDefinitions = Get-AzSigImageVersion -GalleryName "your-gallery-name" -ResourceGroupName $resourceGroupName
+# Set the resource group name where the images are located
+resourceGroupName="<resource-group-name>"
 
-Iterate through each image definition and check its creation date
-foreach ($imageDefinition in $imageDefinitions) {
-$creationDate = $imageDefinition.CreationDate
-$ageInDays = ([DateTime]::Now - $creationDate).Days
+# Get the list of all image definitions in the resource group
+imageDefinitions=$(az sig image-definition list --resource-group $resourceGroupName --query "[].name" -o tsv)
 
-if ($ageInDays -gt $maxAgeInDays) {
-    $imageName = $imageDefinition.Name
-    $imageVersion = $imageDefinition.Version
+# Loop through each image definition
+for imageDefinitionName in $imageDefinitions
+do
+    # Get the list of all images in the image definition
+    images=$(az sig image-version list --resource-group $resourceGroupName --gallery-name $imageDefinitionName --query "[?publishingProfile.publishedAt < @45daysago].version" -o tsv)
 
-    # Remove the image definition
-    Write-Host "Removing image definition $imageName (version $imageVersion) created $creationDate..."
+    # Loop through each image in the image definition 
+    for image in $images
+    do
+        # Delete the image
+        az sig image-version delete --resource-group $resourceGroupName --gallery-name $imageDefinitionName --gallery-image-definition $imageDefinitionName --gallery-image-version $image --yes
+    done
+done
 
-    Remove-AzSigImageVersion -GalleryName "your-gallery-name" -GalleryImageDefinition $imageName -ResourceGroupName $resourceGroupName -Version $imageVersion
-
-    Write-Host "Image definition removed."
-}
 
 
 
