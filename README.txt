@@ -1,4 +1,5 @@
-images=$(az sig image-version list --resource-group $resourceGroupName --gallery-name $imageDefinitionName --query "[?publishingProfile.publishedAt < datetime(@45daysago)].version" -o tsv)
+images=$(az sig image-version list --resource-group $resourceGroupName --gallery-name $imageDefinitionName --query "[?publishingProfile.publishedAt < datetime(@)][].version" --output tsv --arg daysago 45daysago)
+
 
 
 
