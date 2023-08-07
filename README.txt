@@ -1,3 +1,21 @@
+foreach ($image in $imageDefinitions) {
+    $creationDate = $image.CreationDate
+    $ageTimeSpan = $currentDate.Subtract($creationDate)
+    $ageInDays = $ageTimeSpan.TotalDays
+
+    if ($ageInDays -gt $maxAgeInDays) {
+        $imageDefinitionName = $image.Name
+        Write-Host "Removing image definition $imageDefinitionName created $($creationDate.ToShortDateString())..."
+        
+        # Remove the image definition
+        Remove-AzGalleryImageDefinition -ResourceGroupName $resourceGroupName -GalleryName $galleryName -Name $imageDefinitionName -Force
+        
+        Write-Host "Image definition removed."
+    }
+}
+
+
+###########################################################################
 # Set your Azure subscription and resource group details
 $subscriptionId = "your-subscription-id"
 $resourceGroupName = "your-resource-group-name"
