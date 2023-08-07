@@ -1,4 +1,7 @@
-images=$(az sig image-version list --resource-group $resourceGroupName --gallery-name $imageDefinitionName --query "[?publishingProfile.publishedAt < '2022-01-01'].name" --output tsv)
+$imageDefinitions=(az sig image-definition list --resource-group $resourceGroupName --query "[].name" -o tsv)
+
+foreach ($imageDefinitionName in $imageDefinitions) {
+$images = (az sig image-version list --resource-group $resourceGroupName --gallery-name $imageDefinitionName --query "[?publishingProfile.publishedAt < @45daysago].version" -o tsv)
 
 
 
