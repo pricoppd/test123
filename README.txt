@@ -83,3 +83,42 @@ done
 
 # Logout from the Azure account
 az logout
+
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+trigger:
+- main
+
+pr: none
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.x'
+    addToPath: true
+
+- script: |
+    # Set your Azure subscription and resource group details
+    subscriptionId="your-subscription-id"
+    resourceGroupName="your-resource-group-name"
+    
+    # Set the script file path
+    scriptPath="path/to/your/script.sh"
+    
+    # Authenticate to your Azure account
+    az login --service-principal --username $(SP_APP_ID) --password $(SP_PASSWORD) --tenant $(SP_TENANT_ID)
+    
+    # Execute the script
+    bash $scriptPath
+    
+    # Logout from the Azure account
+    az logout
+  displayName: 'Run Azure Image Cleanup Script'
+  env:
+    SP_APP_ID: $(servicePrincipalAppId)
+    SP_PASSWORD: $(servicePrincipalPassword)
+    SP_TENANT_ID: $(tenantId)
