@@ -1,3 +1,7 @@
+images=$(az sig image-version list --resource-group $resourceGroupName --gallery-name $imageDefinitionName --query "[?publishingProfile.publishedAt < datetime(@45daysago)].version" -o tsv)
+
+
+
 # Set the resource group name where the images are located
 resourceGroupName="<resource-group-name>"
 
