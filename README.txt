@@ -1,13 +1,78 @@
+# Import the Azure PowerShell module
+Import-Module Az
+
+# Set your Azure subscription and resource group details
+$subscriptionId = "your-subscription-id"
+$resourceGroupName = "your-resource-group-name"
+$galleryName = "your-gallery-name"
+
+# Set the maximum age (in days) for images to be considered for removal
+$maxAgeInDays = 14
+
+# Authenticate to your Azure account (interactive login)
+Connect-AzAccount
+
+# Get all the images in the specified gallery
+$images = Get-AzGalleryImage -ResourceGroupName $resourceGroupName -GalleryName $galleryName
+
+# Get the current date
+$currentDate = Get-Date
+
+# Iterate through each image and check its creation date
+foreach ($image in $images) {
+    $creationDate = $image.CreationDate
+    $ageInDays = ($currentDate - $creationDate).Days
+    
+    if ($ageInDays -gt $maxAgeInDays) {
+        Write-Host "Removing image $($image.Name) created $($creationDate.ToShortDateString())..."
+        
+        # Remove the image
+        Remove-AzGalleryImage -ResourceGroupName $resourceGroupName -GalleryName $galleryName -Name $image.Name -Force
+        
+        Write-Host "Image removed."
+    }
+}
+
+# Disconnect from the Azure account
+Disconnect-AzAccount
+
+
+###############################################################################################################################################################################
+
 #!/bin/bash
 
-# Read the contents of main.auto.tfvars into a variable
-main_data=$(cat main.auto.json)
+# Set your Azure subscription and resource group details
+subscriptionId="your-subscription-id"
+resourceGroupName="your-resource-group-name"
+galleryName="your-gallery-name"
 
-# Extract the value of "name_prefix" from the JSON using pure bash
-name_prefix_value=$(echo "$main_data" | grep -o '"name_prefix": *"[^"]*"' | sed 's/"name_prefix": "\(.*\)"/\1/')
+# Set the maximum age (in days) for images to be considered for removal
+maxAgeInDays=14
 
-# Print the value of name_prefix
-echo "The value of name_prefix is: $name_prefix_value"
+# Authenticate to your Azure account
+az login
 
-# Save the value of name_prefix into another variable
-captured_name_prefix="$name_prefix_value"
+# Get the current date
+currentDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+# Get all the images in the specified gallery
+images=$(az sig image list --resource-group $resourceGroupName --gallery-name $galleryName --subscription $subscriptionId --query '[].name' --output tsv)
+
+# Iterate through each image and check its creation date
+for image in $images; do
+    creationDate=$(az sig image show --resource-group $resourceGroupName --gallery-name $galleryName --gallery-image-definition $image --subscription $subscriptionId --query 'publishingProfile.publishingProfileType.creationDate' --output tsv)
+    
+    ageInDays=$(( ( $(date -u -d $currentDate +%s) - $(date -u -d $creationDate +%s) ) / 86400 ))
+    
+    if [ $ageInDays -gt $maxAgeInDays ]; then
+        echo "Removing image $image created $creationDate..."
+        
+        # Remove the image
+        az sig image delete --resource-group $resourceGroupName --gallery-name $galleryName --gallery-image-definition $image --subscription $subscriptionId --yes
+        
+        echo "Image removed."
+    fi
+done
+
+# Logout from the Azure account
+az logout
