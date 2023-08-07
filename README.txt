@@ -1,3 +1,11 @@
+imageDefinitions=$(az sig image-version list --gallery-name $galleryName --resource-group $resourceGroupName --query "[?galleryImageDefinition!=null].{Name:galleryImageDefinition, Version:name, CreationDate:creationDate}" --output json)
+
+
+
+
+
+
+
 # Import the Azure PowerShell module
 Import-Module Az
 
