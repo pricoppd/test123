@@ -1,9 +1,58 @@
-$imageDefinitions=(az sig image-definition list --resource-group $resourceGroupName --query "[].name" -o tsv)
+#!/bin/bash
 
-foreach ($imageDefinitionName in $imageDefinitions) {
-$images = (az sig image-version list --resource-group $resourceGroupName --gallery-name $imageDefinitionName --query "[?publishingProfile.publishedAt < @45daysago].version" -o tsv)
+# Set your Azure subscription and resource group details
+subscriptionId="your-subscription-id"
+resourceGroupName="your-resource-group-name"
+galleryName="your-gallery-name"
+
+# Set the maximum age (in days) for images to be considered for removal
+maxAgeInDays=14
+
+# Authenticate to your Azure account
+az login
+
+# Get the current date
+currentDate=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+# Get all the images in the specified gallery
+images=$(az sig image-version list --gallery-name $galleryName --resource-group $resourceGroupName --query "[].{Name:name, CreationDate:creationDate}" --output json)
+
+# Iterate through each image and check its creation date
+for image in $images; do
+    creationDate=$(echo $image | jq -r '.CreationDate')
+    ageInDays=$(( ($(date -u -d $currentDate +%s) - $(date -u -d $creationDate +%s)) / 86400 ))
+    
+    if [ $ageInDays -gt $maxAgeInDays ]; then
+        imageName=$(echo $image | jq -r '.Name')
+        echo "Removing image $imageName created $creationDate..."
+        
+        # Remove the image
+        az sig image-version delete --gallery-name $galleryName --gallery-image-definition $imageName --resource-group $resourceGroupName --version $imageName --yes
+        
+        echo "Image removed."
+    fi
+done
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+======================================================================================================================
 
 
 
