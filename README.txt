@@ -1,4 +1,37 @@
-imageDefinitions=$(az sig image-version list --gallery-name $galleryName --resource-group $resourceGroupName --query "[?galleryImageDefinition!=null].{Name:galleryImageDefinition, Version:name, CreationDate:creationDate}" --output json)
+# Set your Azure subscription and resource group details
+$subscriptionId = "your-subscription-id"
+$resourceGroupName = "your-resource-group-name"
+$galleryName = "your-gallery-name"
+
+# Set the maximum age (in days) for images to be considered for removal
+$maxAgeInDays = 14
+
+# Authenticate to your Azure account
+az login
+
+# Get the current date
+$currentDate = Get-Date -UFormat "%Y-%m-%dT%H:%M:%SZ"
+
+# Get the list of image definitions in the specified gallery
+$imageDefinitions = az sig image-version list --gallery-name $galleryName --resource-group $resourceGroupName --query "[?galleryImageDefinition!=null].{Name:galleryImageDefinition, Version:name, CreationDate:creationDate}" --output json | ConvertFrom-Json
+
+# Iterate through each image definition and check its creation date
+foreach ($image in $imageDefinitions) {
+    $creationDate = [DateTime]::ParseExact($image.CreationDate, "yyyy-MM-ddTHH:mm:ssZ", $null)
+    $ageInDays = ($currentDate - $creationDate).Days
+    
+    if ($ageInDays -gt $maxAgeInDays) {
+        $imageDefinitionName = $image.Name
+        $imageVersion = $image.Version
+        Write-Host "Removing image definition $imageDefinitionName (version $imageVersion) created $($creationDate.ToString('yyyy-MM-dd'))..."
+        
+        # Remove the image definition
+        az sig image-version delete --gallery-name $galleryName --gallery-image-definition $imageDefinitionName --resource-group $resourceGroupName --version $imageVersion --yes
+        
+        Write-Host "Image definition removed."
+    }
+}
+
 
 
 
