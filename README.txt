@@ -44,10 +44,9 @@ Disconnect-AzAccount
 # Set your Azure subscription and resource group details
 subscriptionId="your-subscription-id"
 resourceGroupName="your-resource-group-name"
-galleryName="your-gallery-name"
 
 # Set the maximum age (in days) for images to be considered for removal
-maxAgeInDays=14
+maxAgeInDays=45
 
 # Authenticate to your Azure account
 az login
@@ -55,23 +54,31 @@ az login
 # Get the current date
 currentDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
-# Get all the images in the specified gallery
-images=$(az sig image list --resource-group $resourceGroupName --gallery-name $galleryName --subscription $subscriptionId --query '[].name' --output tsv)
+# Get all the galleries in the specified resource group
+galleries=$(az sig list --resource-group $resourceGroupName --subscription $subscriptionId --query '[].name' --output tsv)
 
-# Iterate through each image and check its creation date
-for image in $images; do
-    creationDate=$(az sig image show --resource-group $resourceGroupName --gallery-name $galleryName --gallery-image-definition $image --subscription $subscriptionId --query 'publishingProfile.publishingProfileType.creationDate' --output tsv)
+# Iterate through each gallery
+for gallery in $galleries; do
+    echo "Checking images in gallery: $gallery"
     
-    ageInDays=$(( ( $(date -u -d $currentDate +%s) - $(date -u -d $creationDate +%s) ) / 86400 ))
+    # Get all the images in the current gallery
+    images=$(az sig image list --resource-group $resourceGroupName --gallery-name $gallery --subscription $subscriptionId --query '[].name' --output tsv)
     
-    if [ $ageInDays -gt $maxAgeInDays ]; then
-        echo "Removing image $image created $creationDate..."
+    # Iterate through each image and check its creation date
+    for image in $images; do
+        creationDate=$(az sig image show --resource-group $resourceGroupName --gallery-name $gallery --gallery-image-definition $image --subscription $subscriptionId --query 'publishingProfile.publishingProfileType.creationDate' --output tsv)
         
-        # Remove the image
-        az sig image delete --resource-group $resourceGroupName --gallery-name $galleryName --gallery-image-definition $image --subscription $subscriptionId --yes
+        ageInDays=$(( ( $(date -u -d $currentDate +%s) - $(date -u -d $creationDate +%s) ) / 86400 ))
         
-        echo "Image removed."
-    fi
+        if [ $ageInDays -gt $maxAgeInDays ]; then
+            echo "Removing image $image from gallery $gallery (created $creationDate)..."
+            
+            # Remove the image
+            az sig image delete --resource-group $resourceGroupName --gallery-name $gallery --gallery-image-definition $image --subscription $subscriptionId --yes
+            
+            echo "Image removed."
+        fi
+    done
 done
 
 # Logout from the Azure account
