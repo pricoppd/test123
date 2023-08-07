@@ -1,34 +1,20 @@
-# Set your Azure subscription and resource group details
-$subscriptionId = "your-subscription-id"
-$resourceGroupName = "your-resource-group-name"
+$imageDefinitions = Get-AzSigImageVersion -GalleryName "your-gallery-name" -ResourceGroupName $resourceGroupName
 
-# Set the maximum age (in days) for images to be considered for removal
-$maxAgeInDays = 45
+Iterate through each image definition and check its creation date
+foreach ($imageDefinition in $imageDefinitions) {
+$creationDate = $imageDefinition.CreationDate
+$ageInDays = ([DateTime]::Now - $creationDate).Days
 
-# Authenticate to your Azure account (interactive login)
-Connect-AzAccount
+if ($ageInDays -gt $maxAgeInDays) {
+    $imageName = $imageDefinition.Name
+    $imageVersion = $imageDefinition.Version
 
-# Get the current date
-$currentDate = Get-Date
+    # Remove the image definition
+    Write-Host "Removing image definition $imageName (version $imageVersion) created $creationDate..."
 
-# Get all the VM images in the specified resource group
-$images = Get-AzImage -ResourceGroupName $resourceGroupName
+    Remove-AzSigImageVersion -GalleryName "your-gallery-name" -GalleryImageDefinition $imageName -ResourceGroupName $resourceGroupName -Version $imageVersion
 
-# Iterate through each image and check its creation date
-foreach ($image in $images) {
-    $creationDate = $image.CreationTime
-    $ageTimeSpan = $currentDate - $creationDate
-    $ageInDays = [math]::Floor($ageTimeSpan.TotalDays)
-    
-    if ($ageInDays -gt $maxAgeInDays) {
-        $imageName = $image.Name
-        Write-Host "Removing image $imageName created $($creationDate.ToShortDateString())..."
-        
-        # Remove the image
-        Remove-AzImage -ResourceGroupName $resourceGroupName -ImageName $imageName -Force
-        
-        Write-Host "Image removed."
-    }
+    Write-Host "Image definition removed."
 }
 
 
