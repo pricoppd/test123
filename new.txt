@@ -1,40 +1,29 @@
-pipeline {
-    agent any
-    
-    parameters {
-        string(name: 'deployment_type', description: 'Deployment type (qliksense or looker)', defaultValue: 'qliksense')
+stage("Deploy test instance") {
+    when {
+        expression { params.stage_to_run == "deploy_test_instance" }
     }
-    
-    stages {
-        stage("Deploy instances") {
-            when {
-                expression { params.stage == "run" }
-            }
-            steps {
-                script {
-                    def ansibleVarsFile = readFile('ansible_vars.json')
-                    def ansibleVars = new groovy.json.JsonSlurper().parseText(ansibleVarsFile)
-                    
-                    ansibleVars.each { deployment ->
-                        if (deployment[params.deployment_type]) {
-                            def extraVars = deployment.DeployExtraVars.collect { key, value -> "$key='$value'" }.join(' ')
-                            
-                            sh """
-                            ansibleTower(
-                                towerserver: 'ALM ANSIBLE STAGE',
-                                towercredentialsId: 'GFPD-CLOUD-DEV',
-                                templatetype: 'job',
-                                jobTemplate: '${deployment.deploy}',
-                                towerloglevel: 'full',
-                                inventory: '${params.fproject}',
-                                verbose: true,
-                                extraVars: [${extraVars}],
-                                async: false
-                            )
-                            """
-                        }
-                    }
-                }
+    steps {
+        script {
+            def ansibleVarsFile = readFile('DeployApps.json')
+            def ansibleVars = new groovy.json.JsonSlurper().parseText(ansibleVarsFile)
+            
+            def deployment = ansibleVars[params.deployment_type]
+            if (deployment) {
+                def extravars = deployment.DeployExtraVars.collect { key, value -> "$key='$value'" }.join(' ')
+                
+                ansibleTower(
+                    towerServer: 'ALM_ANSIBLE STAGE',
+                    towerCredentialsId: 'GFPD-CLOUD-DEV',
+                    templateType: 'job',
+                    jobTemplate: deployment.job_template_name, // Assuming job_template_name is a property in your JSON
+                    towerloglevel: 'full', // Corrected log level
+                    inventory: deployment.project, // Assuming project is a property in your JSON
+                    verbose: true,
+                    extraVars: extravars, // Using the constructed extravars
+                    async: false
+                )
+            } else {
+                echo "Deployment type '${params.deployment_type}' not found in JSON."
             }
         }
     }
