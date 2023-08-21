@@ -57,3 +57,50 @@ gcloud compute instance-groups managed list-instances [INSTANCE_GROUP_NAME] --zo
 
 #Update metadata on the selected VM:
 gcloud compute instances add-metadata [INSTANCE_NAME] --zone=[ZONE] --metadata KEY1=VALUE1,KEY2=VALUE2
+
+
+#########################################################################################################################
+
+
+#!/bin/bash
+
+# Set variables
+ZONE="us-central1-a"
+APP="your_app_value"  # Set your app value here
+SET_IMAGE_TEST="yes"  # If you want to set image_test to 'TRUE', keep this as "yes". Otherwise, set to "no".
+
+# List all instance groups in the specified zone matching the pattern
+echo "Listing matching instance groups in zone $ZONE:"
+INSTANCE_GROUPS=$(gcloud compute instance-groups list --zone=$ZONE --filter="name~gce-instance-template-$APP-*" --format="value(name)")
+
+echo "$INSTANCE_GROUPS"
+
+# Check if any instance groups matched
+if [ -z "$INSTANCE_GROUPS" ]; then
+    echo "No matching instance groups found."
+    exit 1
+fi
+
+# Assuming you want the first instance group from the filtered list
+INSTANCE_GROUP_NAME=$(echo "$INSTANCE_GROUPS" | head -n 1)
+
+# Automatically fetch the first VM (instance) in the selected instance group
+INSTANCE_NAME=$(gcloud compute instance-groups managed list-instances $INSTANCE_GROUP_NAME --zone=$ZONE --limit=1 --format="value(instance)")
+
+# If no VM is found, exit
+if [ -z "$INSTANCE_NAME" ]; then
+    echo "No VMs found in the instance group."
+    exit 1
+fi
+
+echo "Selected VM: $INSTANCE_NAME"
+
+if [[ $SET_IMAGE_TEST == "yes" ]]; then
+    # Update metadata on the selected VM
+    gcloud compute instances add-metadata $INSTANCE_NAME --zone=$ZONE --metadata image_test=TRUE
+
+    echo "Metadata updated for VM $INSTANCE_NAME with image_test set to 'TRUE'."
+else
+    echo "No metadata changes made."
+fi
+
