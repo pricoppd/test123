@@ -1,29 +1,27 @@
-stage("Deploy test instance") {
-    when {
-        expression { params.stage_to_run == "deploy_test_instance" }
-    }
-    steps {
-        script {
-            def ansibleVarsFile = readFile('DeployApps.json')
-            def ansibleVars = new groovy.json.JsonSlurper().parseText(ansibleVarsFile)
-            
-            def deployment = ansibleVars[params.deployment_type]
-            if (deployment) {
-                def extravars = deployment.DeployExtraVars.collect { key, value -> "$key='$value'" }.join(' ')
-                
-                ansibleTower(
-                    towerServer: 'ALM_ANSIBLE STAGE',
-                    towerCredentialsId: 'GFPD-CLOUD-DEV',
-                    templateType: 'job',
-                    jobTemplate: deployment.job_template_name, // Assuming job_template_name is a property in your JSON
-                    towerloglevel: 'full', // Corrected log level
-                    inventory: deployment.project, // Assuming project is a property in your JSON
-                    verbose: true,
-                    extraVars: extravars, // Using the constructed extravars
-                    async: false
-                )
-            } else {
-                echo "Deployment type '${params.deployment_type}' not found in JSON."
+stages {
+        stage("Run Ansible Deployment") {
+            steps {
+                script {
+                    def ansibleVarsFile = readFile('ansible_vars.json')
+                    def ansibleVars = new groovy.json.JsonSlurper().parseText(ansibleVarsFile)
+                    
+                    echo "Available top-level keys in ansibleVars: ${ansibleVars.keySet()}"
+                    
+                    if(ansibleVars['Applications']) {
+                        echo "Available deployment types under 'Applications': ${ansibleVars['Applications'].keySet()}"
+                        def deployment = ansibleVars['Applications'][params.deployment_type]
+                        
+                        if (deployment) {
+                            echo "Selected deployment type: ${params.deployment_type}"
+                            def extraVars = deployment.DeployExtraVars.collect { key, value -> "$key='$value'" }.join(' ')
+                            echo "ExtraVars: ${extraVars}"
+                        } else {
+                            echo "No deployment found for the specified type under 'Applications': ${params.deployment_type}"
+                        }
+                    } else {
+                        echo "The key 'Applications' was not found in ansibleVars."
+                    }
+                }
             }
         }
     }
