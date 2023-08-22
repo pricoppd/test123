@@ -5,6 +5,16 @@ data "local_file" "conditions" {
 locals {
   conditions = jsondecode(data.local_file.conditions.content)["stackdriver_alerts"]
 }
+resource "google_monitoring_alert_policy" "policy" {
+  for_each = { for condition in local.conditions : condition.displayName => condition }
+
+  display_name = each.value.displayName
+}
+
+
+
+########################################################################
+
 
 resource "google_monitoring_alert_policy" "policy" {
   for_each = { for condition in local.conditions : condition.displayName => condition }
@@ -15,28 +25,6 @@ resource "google_monitoring_alert_policy" "policy" {
     for_each = [each.value.conditions] 
     content {
       display_name = conditions.value.displayName
-
-      condition_threshold {
-        comparison = conditions.value.conditionThreshold.comparison
-        filter    = conditions.value.conditionThreshold.filter
-        duration  = conditions.value.conditionThreshold.duration
-
-        aggregation {
-          alignment_period    = conditions.value.conditionThreshold.alignmentPeriod
-          per_series_aligner  = conditions.value.conditionThreshold.perSeriesAligner
-        }
-
-        threshold_value = conditions.value.conditionThreshold.thresholdValue
-
-        trigger {
-          count = conditions.value.conditionThreshold.trigger.count
-        }
-      }
     }
   }
-
-  notification_channels = each.value.notificationChannels
-  combiner              = each.value.combiner
-  # Add other fields as required
 }
-
