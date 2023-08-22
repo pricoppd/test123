@@ -1,16 +1,9 @@
-data "local_file" "conditions" {
-  filename = "conditions.json"
-}
-
-locals {
-  conditions = jsondecode(data.local_file.conditions.content).stackdriver_alerts
-}
-
 resource "google_monitoring_alert_policy" "policy" {
   for_each = { for condition in local.conditions : condition.displayName => condition }
 
   display_name = each.value.displayName
 
+  # This is where the primary complexity is, so we'll carefully break down this block
   dynamic "conditions" {
     for_each = [each.value.conditions]
     content {
@@ -24,7 +17,6 @@ resource "google_monitoring_alert_policy" "policy" {
         aggregation {
           alignment_period    = conditions.value.conditionThreshold.aggregation.alignmentPeriod
           per_series_aligner  = conditions.value.conditionThreshold.aggregation.perSeriesAligner
-          # Add other aggregation attributes if present in your JSON
         }
       }
     }
@@ -33,6 +25,7 @@ resource "google_monitoring_alert_policy" "policy" {
   notification_channels = each.value.notificationChannels
   combiner              = each.value.combiner
 }
+
 
 
 ###############################################################################################################
