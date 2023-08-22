@@ -126,11 +126,18 @@ resource "google_monitoring_alert_policy" "policy" {
       # ... other condition attributes ...
 
       duration = each.value.conditionThreshold.duration
+      comparison = "COMPARISON_GT"  # Modify based on your specific requirement
+      threshold_value = each.value.conditionThreshold.thresholdValue
 
       aggregation {
         alignment_period = each.value.conditionThreshold.aggregation.alignmentPeriod
         per_series_aligner = each.value.conditionThreshold.aggregation.perSeriesAligner
         # ... add other aggregation attributes if present in your JSON ...
+      }
+
+      trigger {
+        count = each.value.conditionThreshold.trigger.count
+        # Add other trigger attributes if present in your JSON
       }
     }
   }
