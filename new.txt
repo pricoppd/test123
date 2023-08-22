@@ -3,28 +3,40 @@ data "local_file" "conditions" {
 }
 
 locals {
-  conditions = jsondecode(data.local_file.conditions.content)["stackdriver_alerts"]
-}
-resource "google_monitoring_alert_policy" "policy" {
-  for_each = { for condition in local.conditions : condition.displayName => condition }
-
-  display_name = each.value.displayName
+  alert_policies = jsondecode(data.local_file.conditions.content)["stackdriver_alerts"]
 }
 
+resource "google_monitoring_alert_policy" "stackdriver_alerts" {
+  for_each = { for alert in local.alert_policies : alert.displayName => alert }
 
-
-########################################################################
-
-
-resource "google_monitoring_alert_policy" "policy" {
-  for_each = { for condition in local.conditions : condition.displayName => condition }
+  provider = google-beta
 
   display_name = each.value.displayName
+  combiner     = each.value.combiner
 
-  dynamic "conditions" {
-    for_each = [each.value.conditions] 
-    content {
-      display_name = conditions.value.displayName
+  conditions {
+    display_name = each.value.conditions.displayName
+
+    condition_threshold {
+      filter = each.value.conditions.conditionThreshold.filter
+      duration = each.value.conditions.conditionThreshold.duration
+      comparison = each.value.conditions.conditionThreshold.comparison
+
+      aggregations {
+        alignment_period = each.value.conditions.conditionThreshold.aggregations.alignmentPeriod
+        per_series_aligner = each.value.conditions.conditionThreshold.aggregations.perSeriesAligner
+      }
+
+      threshold_value = each.value.conditions.conditionThreshold.thresholdValue
+
+      trigger {
+        count = each.value.conditions.conditionThreshold.trigger.count
+      }
     }
+  }
+
+  evaluation_window_period = "EVALUATION_MISSING_DATA_INACTIVE"
+  alert_strategy {
+    auto_close = each.value.alertStrategy.autoclose
   }
 }
