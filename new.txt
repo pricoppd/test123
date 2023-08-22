@@ -104,3 +104,33 @@ else
     echo "No metadata changes made."
 fi
 
+#####################################################################################################################
+
+data "local_file" "conditions" {
+  filename = "conditions.json"
+}
+
+locals {
+  conditions = jsondecode(data.local_file.conditions.content)
+}
+
+resource "google_monitoring_alert_policy" "policy" {
+  for_each = { for condition in local.conditions : condition.displayName => condition }
+
+  display_name = each.value.displayName
+
+  conditions {
+    display_name = each.value.displayName
+
+    condition_threshold {
+      # Use the details from your JSON to fill the condition details...
+      # Depending on the shape of your JSON, you might use something like:
+      # filter   = each.value.conditionThreshold.filter
+      # comparison  = each.value.conditionThreshold.comparison
+      # and so on...
+    }
+  }
+
+  notification_channels = ["<YOUR-NOTIFICATION-CHANNEL-ID>"] # Update this with your notification channel ID
+  combiner              = "OR"                              # This is the outer combiner
+}
