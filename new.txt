@@ -1,118 +1,9 @@
-resource "google_monitoring_alert_policy" "policy" {
-  for_each = { for condition in local.conditions : condition.displayName => condition }
-
-  display_name = each.value.displayName
-
-  # This is where the primary complexity is, so we'll carefully break down this block
-  dynamic "conditions" {
-    for_each = [each.value.conditions]
-    content {
-      display_name = conditions.value.displayName
-
-      condition_threshold {
-        comparison = conditions.value.conditionThreshold.comparison
-        filter    = conditions.value.conditionThreshold.filter
-        duration  = conditions.value.conditionThreshold.duration
-
-        aggregation {
-          alignment_period    = conditions.value.conditionThreshold.aggregation.alignmentPeriod
-          per_series_aligner  = conditions.value.conditionThreshold.aggregation.perSeriesAligner
-        }
-      }
-    }
-  }
-
-  notification_channels = each.value.notificationChannels
-  combiner              = each.value.combiner
-}
-
-
-
-###############################################################################################################
-
-#!/bin/bash
-
-INSTANCE_GROUP_NAME=$1
-ZONE=$2
-INSTANCE_NAME=$3
-
-ZONE="us-central1-a"
-
-# Ask the user to specify the $app value
-APP = 'looker'
-
-# List all instance groups in the specified zone matching the pattern
-echo "Listing matching instance groups in zone $ZONE:"
-INSTANCE_GROUPS=$(gcloud compute instance-groups list --zone=$ZONE --filter="name~gce-instance-template-$APP-*" --format="value(name)")
-
-echo "$INSTANCE_GROUPS"
-
-# Automatically fetch the first VM (instance) in the selected instance group
-INSTANCE_NAME=$(gcloud compute instance-groups managed list-instances $INSTANCE_GROUP_NAME --zone=$ZONE --limit=1 --format="value(instance)")
-
-#List all instance groups in a specific zone:
-gcloud compute instance-groups list --zone=[ZONE]
-
-#List VMs (instances) in the selected instance group:
-gcloud compute instance-groups managed list-instances [INSTANCE_GROUP_NAME] --zone=[ZONE]
-
-#Update metadata on the selected VM:
-gcloud compute instances add-metadata [INSTANCE_NAME] --zone=[ZONE] --metadata KEY1=VALUE1,KEY2=VALUE2
-
-
-#########################################################################################################################
-
-
-#!/bin/bash
-
-# Set variables
-ZONE="us-central1-a"
-APP="your_app_value"  # Set your app value here
-SET_IMAGE_TEST="yes"  # If you want to set image_test to 'TRUE', keep this as "yes". Otherwise, set to "no".
-
-# List all instance groups in the specified zone matching the pattern
-echo "Listing matching instance groups in zone $ZONE:"
-INSTANCE_GROUPS=$(gcloud compute instance-groups list --zone=$ZONE --filter="name~gce-instance-template-$APP-*" --format="value(name)")
-
-echo "$INSTANCE_GROUPS"
-
-# Check if any instance groups matched
-if [ -z "$INSTANCE_GROUPS" ]; then
-    echo "No matching instance groups found."
-    exit 1
-fi
-
-# Assuming you want the first instance group from the filtered list
-INSTANCE_GROUP_NAME=$(echo "$INSTANCE_GROUPS" | head -n 1)
-
-# Automatically fetch the first VM (instance) in the selected instance group
-INSTANCE_NAME=$(gcloud compute instance-groups managed list-instances $INSTANCE_GROUP_NAME --zone=$ZONE --limit=1 --format="value(instance)")
-
-# If no VM is found, exit
-if [ -z "$INSTANCE_NAME" ]; then
-    echo "No VMs found in the instance group."
-    exit 1
-fi
-
-echo "Selected VM: $INSTANCE_NAME"
-
-if [[ $SET_IMAGE_TEST == "yes" ]]; then
-    # Update metadata on the selected VM
-    gcloud compute instances add-metadata $INSTANCE_NAME --zone=$ZONE --metadata image_test=TRUE
-
-    echo "Metadata updated for VM $INSTANCE_NAME with image_test set to 'TRUE'."
-else
-    echo "No metadata changes made."
-fi
-
-#####################################################################################################################
-
 data "local_file" "conditions" {
   filename = "conditions.json"
 }
 
 locals {
-  conditions = jsondecode(data.local_file.conditions.content).stackdriver_alerts
+  conditions = jsondecode(data.local_file.conditions.content)["stackdriver_alerts"]
 }
 
 resource "google_monitoring_alert_policy" "policy" {
@@ -121,7 +12,7 @@ resource "google_monitoring_alert_policy" "policy" {
   display_name = each.value.displayName
 
   dynamic "conditions" {
-    for_each = [each.value.conditions]
+    for_each = [each.value.conditions] 
     content {
       display_name = conditions.value.displayName
 
@@ -131,9 +22,14 @@ resource "google_monitoring_alert_policy" "policy" {
         duration  = conditions.value.conditionThreshold.duration
 
         aggregation {
-          alignment_period    = conditions.value.conditionThreshold.aggregation.alignmentPeriod
-          per_series_aligner  = conditions.value.conditionThreshold.aggregation.perSeriesAligner
-          # ... add other aggregation attributes if present in your JSON ...
+          alignment_period    = conditions.value.conditionThreshold.alignmentPeriod
+          per_series_aligner  = conditions.value.conditionThreshold.perSeriesAligner
+        }
+
+        threshold_value = conditions.value.conditionThreshold.thresholdValue
+
+        trigger {
+          count = conditions.value.conditionThreshold.trigger.count
         }
       }
     }
@@ -141,4 +37,6 @@ resource "google_monitoring_alert_policy" "policy" {
 
   notification_channels = each.value.notificationChannels
   combiner              = each.value.combiner
+  # Add other fields as required
 }
+
