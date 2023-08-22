@@ -123,14 +123,18 @@ resource "google_monitoring_alert_policy" "policy" {
     display_name = each.value.displayName
 
     condition_threshold {
-      # Use the details from your JSON to fill the condition details...
-      # Depending on the shape of your JSON, you might use something like:
-      # filter   = each.value.conditionThreshold.filter
-      # comparison  = each.value.conditionThreshold.comparison
-      # and so on...
+      # ... other condition attributes ...
+
+      duration = each.value.conditionThreshold.duration
+
+      aggregation {
+        alignment_period = each.value.conditionThreshold.aggregation.alignmentPeriod
+        per_series_aligner = each.value.conditionThreshold.aggregation.perSeriesAligner
+        # ... add other aggregation attributes if present in your JSON ...
+      }
     }
   }
 
-  notification_channels = ["<YOUR-NOTIFICATION-CHANNEL-ID>"] # Update this with your notification channel ID
-  combiner              = "OR"                              # This is the outer combiner
+  notification_channels = ["<YOUR-NOTIFICATION-CHANNEL-ID>"]
+  combiner              = "OR"
 }
