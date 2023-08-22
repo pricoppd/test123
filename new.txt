@@ -1,31 +1,39 @@
-stages {
-        stage("Run Ansible Deployment") {
-            steps {
-                script {
-                    def ansibleVarsFile = readFile('ansible_vars.json')
-                    def ansibleVars = new groovy.json.JsonSlurper().parseText(ansibleVarsFile)
-                    
-                    echo "Available top-level keys in ansibleVars: ${ansibleVars.keySet()}"
-                    
-                    if(ansibleVars['Applications']) {
-                        echo "Available deployment types under 'Applications': ${ansibleVars['Applications'].keySet()}"
-                        def deployment = ansibleVars['Applications'][params.deployment_type]
-                        
-                        if (deployment) {
-                            echo "Selected deployment type: ${params.deployment_type}"
-                            def extraVars = deployment.DeployExtraVars.collect { key, value -> "$key='$value'" }.join(' ')
-                            echo "ExtraVars: ${extraVars}"
-                        } else {
-                            echo "No deployment found for the specified type under 'Applications': ${params.deployment_type}"
-                        }
-                    } else {
-                        echo "The key 'Applications' was not found in ansibleVars."
-                    }
-                }
-            }
-        }
-    }
+data "local_file" "conditions" {
+  filename = "conditions.json"
 }
+
+locals {
+  conditions = jsondecode(data.local_file.conditions.content).stackdriver_alerts
+}
+
+resource "google_monitoring_alert_policy" "policy" {
+  for_each = { for condition in local.conditions : condition.displayName => condition }
+
+  display_name = each.value.displayName
+
+  dynamic "conditions" {
+    for_each = [each.value.conditions]
+    content {
+      display_name = conditions.value.displayName
+
+      condition_threshold {
+        comparison = conditions.value.conditionThreshold.comparison
+        filter    = conditions.value.conditionThreshold.filter
+        duration  = conditions.value.conditionThreshold.duration
+
+        aggregation {
+          alignment_period    = conditions.value.conditionThreshold.aggregation.alignmentPeriod
+          per_series_aligner  = conditions.value.conditionThreshold.aggregation.perSeriesAligner
+          # Add other aggregation attributes if present in your JSON
+        }
+      }
+    }
+  }
+
+  notification_channels = each.value.notificationChannels
+  combiner              = each.value.combiner
+}
+
 
 ###############################################################################################################
 
