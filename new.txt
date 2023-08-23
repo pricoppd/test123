@@ -9,3 +9,4 @@ RESULT=$(
 
 RESULT=$(gcloud logging read "jsonPayload.passfail=0 AND logName=projects/$PROJECT/logs/stage-test AND timestamp>=\"$WHEN\" AND jsonPayload.entityIdentification.GCPhostname:$APP_NAME" --format="json(jsonPayload.passfail)" --project="$PROJECT" | jq .[].jsonPayload.passfail)
 
+echo "jsonPayload.passfail=0 AND logName=projects/$PROJECT/logs/stage-test AND timestamp>=\"$WHEN\" AND jsonPayload.entityIdentification.GCPhostname:$APP_NAME"
