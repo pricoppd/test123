@@ -5,3 +5,8 @@ RESULT=$(
     --project="$PROJECT" \
   | jq .[].jsonPayload.passfail
 )
+
+
+gcloud logging read "logName=projects/$PROJECT/logs/stage-test AND (jsonPayload.passfail=0 OR jsonPayload.passfail=1)" --project="$PROJECT"
+
+gcloud logging read "logName=projects/$PROJECT/logs/stage-test AND (jsonPayload.passfail=0 OR jsonPayload.passfail=1)" --project="$PROJECT" --format="json(jsonPayload.passfail)"
