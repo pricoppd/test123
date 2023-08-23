@@ -1,41 +1,7 @@
-#!/bin/bash
-
-PROJECT=$1
-GOOGLE_APPLICATION_CREDENTIALS=$2
-GCP_IMAGE_FAMILY=$3
-APP_NAME=$(echo $GCP_IMAGE_FAMILY | sed 's#."-##')
-
-echo "Project is $PROJECT"
-echo "GCP Image Family is $GCP_IMAGE_FAMILY"
-echo "App Name is $APP_NAME"
-
-# Wait for tests to run
-echo "Pause for tests to run"
-sleep 90
-
-gcloud config set project "$PROJECT"
-gcloud auth activate-service-account --key-file "$GOOGLE_APPLICATION_CREDENTIALS"
-
-# Create past date to filter most recent log entries
-WHEN=$(date --date='10 minutes ago' +%Y-%m-%dT%T)
-echo "Time to filter on is $WHEN"
-
-# Query GCP logging, filter for imagetest-framework results using log name "stage-test" and result (0 or 1) in jsonPayload.passfail
-RESULT=$(gcloud logging read "jsonPayload.passfail=0 AND logName=projects/$PROJECT/logs/stage-test AND timestamp>=\"$WHEN\" AND jsonPayload.entityIdentification.GCPhostname:$APP_NAME" --format="json(jsonPayload.passfail)" --project="$PROJECT" | jq .[].jsonPayload.passfail)
-
-echo "Result: $RESULT"
-
-# Check if $RESULT exists, if it does it will be value "0"
-if [ -n "$RESULT" ]
-then
-    if [ "$RESULT" == "0" ]
-    then
-        echo "Image testing successful, Result is $RESULT from jsonPayload.passfail for $APP_NAME in log projects/$PROJECT/logs/stage-test"
-    else
-        echo "Image testing failed, Result is 1 (error) from jsonPayload.passfail for $APP_NAME in log projects/$PROJECT/logs/stage-test"
-        exit 1
-    fi
-else
-    echo "No results found"
-    exit 1
-fi
+RESULT=$(
+  gcloud logging read \
+    "jsonPayload.passfail=0 AND logName=projects/$PROJECT/logs/stage-test AND timestamp>=\"$WHEN\" AND jsonPayload.entityIdentification.GCPhostname:$APP_NAME" \
+    --format="json(jsonPayload.passfail)" \
+    --project="$PROJECT" \
+  | jq .[].jsonPayload.passfail
+)
