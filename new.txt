@@ -1,42 +1,41 @@
-data "local_file" "conditions" {
-  filename = "conditions.json"
-}
+#!/bin/bash
 
-locals {
-  alert_policies = jsondecode(data.local_file.conditions.content)["stackdriver_alerts"]
-}
+PROJECT=$1
+GOOGLE_APPLICATION_CREDENTIALS=$2
+GCP_IMAGE_FAMILY=$3
+APP_NAME=$(echo $GCP_IMAGE_FAMILY | sed 's#."-##')
 
-resource "google_monitoring_alert_policy" "stackdriver_alerts" {
-  for_each = { for alert in local.alert_policies : alert.displayName => alert }
+echo "Project is $PROJECT"
+echo "GCP Image Family is $GCP_IMAGE_FAMILY"
+echo "App Name is $APP_NAME"
 
-  provider = google-beta
+# Wait for tests to run
+echo "Pause for tests to run"
+sleep 90
 
-  display_name = each.value.displayName
-  combiner     = each.value.combiner
+gcloud config set project "$PROJECT"
+gcloud auth activate-service-account --key-file "$GOOGLE_APPLICATION_CREDENTIALS"
 
-  conditions {
-    display_name = each.value.conditions.displayName
+# Create past date to filter most recent log entries
+WHEN=$(date --date='10 minutes ago' +%Y-%m-%dT%T)
+echo "Time to filter on is $WHEN"
 
-    condition_threshold {
-      filter = each.value.conditions.conditionThreshold.filter
-      duration = each.value.conditions.conditionThreshold.duration
-      comparison = each.value.conditions.conditionThreshold.comparison
+# Query GCP logging, filter for imagetest-framework results using log name "stage-test" and result (0 or 1) in jsonPayload.passfail
+RESULT=$(gcloud logging read "jsonPayload.passfail=0 AND logName=projects/$PROJECT/logs/stage-test AND timestamp>=\"$WHEN\" AND jsonPayload.entityIdentification.GCPhostname:$APP_NAME" --format="json(jsonPayload.passfail)" --project="$PROJECT" | jq .[].jsonPayload.passfail)
 
-      aggregations {
-        alignment_period = each.value.conditions.conditionThreshold.aggregations.alignmentPeriod
-        per_series_aligner = each.value.conditions.conditionThreshold.aggregations.perSeriesAligner
-      }
+echo "Result: $RESULT"
 
-      threshold_value = each.value.conditions.conditionThreshold.thresholdValue
-
-      trigger {
-        count = each.value.conditions.conditionThreshold.trigger.count
-      }
-    }
-  }
-
-  evaluation_window_period = "EVALUATION_MISSING_DATA_INACTIVE"
-  alert_strategy {
-    auto_close = each.value.alertStrategy.autoclose
-  }
-}
+# Check if $RESULT exists, if it does it will be value "0"
+if [ -n "$RESULT" ]
+then
+    if [ "$RESULT" == "0" ]
+    then
+        echo "Image testing successful, Result is $RESULT from jsonPayload.passfail for $APP_NAME in log projects/$PROJECT/logs/stage-test"
+    else
+        echo "Image testing failed, Result is 1 (error) from jsonPayload.passfail for $APP_NAME in log projects/$PROJECT/logs/stage-test"
+        exit 1
+    fi
+else
+    echo "No results found"
+    exit 1
+fi
