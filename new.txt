@@ -14,3 +14,11 @@ echo "jsonPayload.passfail=0 AND logName=projects/$PROJECT/logs/stage-test AND t
 
 
 RESULT=$(gcloud logging read "jsonPayload.passfail=0 AND logName=projects/$PROJECT/logs/stage-test AND timestamp>=\"$WHEN\" AND jsonPayload.entityIdentification.GCPhostname:$APP_NAME" --format="json(jsonPayload.passfail)" --order-by="timestamp desc" --limit=1 --project="$PROJECT" | jq .[].jsonPayload.passfail)
+
+
+"""""""""""""""""""
+
+
+
+LATEST_TIMESTAMP=$(gcloud logging read "logName=projects/$PROJECT/logs/stage-test" --order-by="timestamp desc" --limit=1 --format="value(timestamp)" --project="$PROJECT")
+RESULT=$(gcloud logging read "jsonPayload.passfail=0 AND logName=projects/$PROJECT/logs/stage-test AND timestamp=\"$LATEST_TIMESTAMP\" AND jsonPayload.entityIdentification.GCPhostname:$APP_NAME" --format="json(jsonPayload.passfail)" --project="$PROJECT" | jq .[].jsonPayload.passfail)
