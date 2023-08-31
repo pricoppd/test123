@@ -1,2 +1,3 @@
 zone_part=$(echo "$url" | sed 's/.*zone\/\(.*\)/\1/')
 zone_part=$(echo "$url" | awk -F'zone/' '{print $2}')
+zone_part=$(echo "$url" | awk -F'zone/' '{print $2}')
