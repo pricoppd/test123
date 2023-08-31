@@ -1,1 +1,7 @@
-gcloud compute instance-groups list-instances my-instance-group --uri | xargs gcloud compute instances describe --format='get(zone)'
+#!/bin/bash
+
+# Get the zone from the URL
+zone=$(echo "$url" | cut -d'?' -f2 | cut -d= -f2)
+
+# Print the zone
+echo "$zone"
