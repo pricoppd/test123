@@ -1,5 +1,6 @@
-parsed_url = urlparse(url)
-query_params = parse_qs(parsed_url.query)
+url = "https://googleapi.com/compute/v1/projects/paul-893231398123-dev/zone/europe-west1-b"
 
-var = query_params['zone'][0]
-print(var)
+# Split the URL by "/" and get the part after "zone/"
+zone_part = url.split("zone/")[-1]
+
+print(zone_part)
