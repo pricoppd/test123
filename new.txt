@@ -1,7 +1,5 @@
-#!/bin/bash
+parsed_url = urlparse(url)
+query_params = parse_qs(parsed_url.query)
 
-# Get the zone from the URL
-zone=$(echo "$url" | cut -d'?' -f2 | cut -d= -f2)
-
-# Print the zone
-echo "$zone"
+var = query_params['zone'][0]
+print(var)
