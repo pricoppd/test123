@@ -1,6 +1,1 @@
-url = "https://googleapi.com/compute/v1/projects/paul-893231398123-dev/zone/europe-west1-b"
-
-# Split the URL by "/" and get the part after "zone/"
-zone_part = url.split("zone/")[-1]
-
-print(zone_part)
+zone_part=$(echo "$url" | sed 's/.*zone\/\(.*\)/\1/')
