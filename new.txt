@@ -1,4 +1,9 @@
-zone_part=$(echo "$url" | sed 's/.*zone\/\(.*\)/\1/')
-zone_part=$(echo "$url" | awk -F'zone/' '{print $2}')
-zone_part=$(echo "$url" | awk -F'zone/' '{print $2}')
-zone_part=$(echo "$url" | cut -d'/' -f8)
+
+
+resource.type="desired_resource_type"
+logName:"logs/desired_log_name"
+jsonPayload.status="DENIED" OR jsonPayload.severity="ERROR"
+
+resource.type="gce_instance"
+logName="logs/compute.googleapis.com%2Factivity_log"
+jsonPayload.event_subtype="compute.instances.setIamPolicy" AND (jsonPayload.status="DENIED" OR jsonPayload.severity="ERROR")
