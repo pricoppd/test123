@@ -1,9 +1,17 @@
-
-
-resource.type="desired_resource_type"
-logName:"logs/desired_log_name"
-jsonPayload.status="DENIED" OR jsonPayload.severity="ERROR"
-
-resource.type="gce_instance"
-logName="logs/compute.googleapis.com%2Factivity_log"
-jsonPayload.event_subtype="compute.instances.setIamPolicy" AND (jsonPayload.status="DENIED" OR jsonPayload.severity="ERROR")
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-port-9090
+  namespace: gatekeeper
+spec:
+  podSelector:
+    matchLabels:
+      app: gatekeeper-audit
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - podSelector: {} # This allows traffic from any pod. Adjust this if necessary.
+    ports:
+    - protocol: TCP
+      port: 9090
