@@ -1,17 +1,1 @@
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: allow-port-9090
-  namespace: gatekeeper
-spec:
-  podSelector:
-    matchLabels:
-      app: gatekeeper-audit
-  policyTypes:
-  - Ingress
-  ingress:
-  - from:
-    - podSelector: {} # This allows traffic from any pod. Adjust this if necessary.
-    ports:
-    - protocol: TCP
-      port: 9090
+kubectl get pods -o=jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.securityContext.seccompProfile.type}{"\n"}{end}'
