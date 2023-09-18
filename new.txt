@@ -1,1 +1,1 @@
-kubectl get pods -o=jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.securityContext.seccompProfile.type}{"\n"}{end}'
+curl -s "https://api.github.com/repos/open-policy-agent/gatekeeper/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/'
