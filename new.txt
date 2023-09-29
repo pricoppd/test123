@@ -1,43 +1,14 @@
----
-- name: Example Playbook
-  hosts: your_target_hosts
-  vars:
-    host_url: "https://your-ldap-server-url/"
-    hvusername: "your_vault_username"
-    redeploy_user: "some_user"
-    redeploy_pass: "some_password"
-    hvnamespace: "your_vault_namespace"
-    # You can also define other variables as needed.
+- name: Debug get_ad_credentials before lookup
+  debug:
+    var: get_ad_credentials
+  # This should show the initial value of get_ad_credentials before the lookup.
 
-  tasks:
-    - name: What is the host URL?
-      debug:
-        msg: "The host URL is {{ host_url }}"
+- name: Retrieve AD credentials from HashiCorp Vault
+  set_fact:
+    get_ad_credentials: "{{ lookup('hashi_vault', 'secret=secrets/kv/GFPD/gfpd1 token=' + client_token + ' url=' + host_url + ' namespace=' + hvnamespace) }}"
+  # Add a debug task here to check the value of get_ad_credentials after the lookup.
 
-    - name: Generate a new token from HashiCorp Vault
-      uri:
-        url: "{{ host_url }}/v1/auth/ldap/login/{{ hvusername }}"
-        method: POST
-        body_format: json
-        body:
-          name: "{{ redeploy_user }}"
-          password: "{{ redeploy_pass }}"
-        force_basic_auth: yes
-      register: result
-
-    - name: Retrieve AD credentials from HashiCorp Vault
-      set_fact:
-        get_ad_credentials: "{{ lookup('hashi_vault', 'secret=secrets/kv/GFPD/gfpd1 token=' + client_token + ' url=' + host_url + ' namespace=' + hvnamespace) }}"
-    
-    - name: Print all retrieved values with no_log flag
-      debug:
-        msg: "KEY: {{ item.key }}, VALUE: {{ item.value }}"
-      loop: "{{ get_ad_credentials.data | dict2items }}"
-      no_log: False
-
-    - name: Print all retrieved values with loop control
-      debug:
-        msg: "KEY: {{ item.key }}\nVALUE: {{ item.value }}"
-      loop: "{{ get_ad_credentials.data | dict2items }}"
-      loop_control:
-        label: "{{ item.key }}"
+- name: Debug get_ad_credentials after lookup
+  debug:
+    var: get_ad_credentials
+  # This should show the value of get_ad_credentials after the lookup.
