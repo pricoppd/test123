@@ -1,13 +1,12 @@
-- name: Retrieve specific key-value pairs from a user secret in Vault
+- name: Retrieve a secret and specific key value
   set_fact:
-    specific_key_values: "{{ lookup('hashi_vault', 'secret=user/secrets/johndoe token=' + client_token + ' url=' + host_url + ' namespace=' + hvnamespace) }}"
+    specific_key_value: "{{ lookup('hashi_vault', 'secret=bla/joy/secret/kv/paul/secret1:{{ item }} token={{ token }} url={{ host_url }}') }}"
   with_items:
-    - username
-    - email
-    - role
+    - githubuser
+    - githubpassword
   register: specific_key_value_results
 
-- name: Output specific key-value pairs
+- name: Extract and display key-value pairs
   debug:
-    msg: "Key: {{ item.item }}, Value: {{ item.specific_key_values[item.item] }}"
-  loop: "{{ specific_key_value_results.results }}"
+    var: item
+  with_items: "{{ specific_key_value_results.results | json_query('[].ansible_facts.specific_key_value') }}"
