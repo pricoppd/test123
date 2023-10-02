@@ -6,7 +6,18 @@
     - githubpassword
   register: specific_key_value_results
 
-- name: Extract and display key-value pairs
+- name: Create a list of key-value pairs
+  set_fact:
+    key_value_list: []
+  run_once: yes
+
+- name: Append key-value pairs to the list
+  set_fact:
+    key_value_list: "{{ key_value_list + [{'key': specific_key_value_results.results[item_idx].ansible_facts.specific_key_value, 'value': specific_key_value_results.results[item_idx].item}] }}"
+  loop: "{{ range(0, specific_key_value_results.results | length) | list }}"
+  loop_control:
+    index_var: item_idx
+
+- name: Display the key-value list
   debug:
-    var: item
-  with_items: "{{ specific_key_value_results.results | json_query('[].ansible_facts.specific_key_value') }}"
+    var: key_value_list
