@@ -1,29 +1,13 @@
-**Overview of HashiCorp Vault**:
-HashiCorp Vault is a secure and centralized tool for managing secrets, keys, and sensitive data. It provides a robust solution for storing, retrieving, and dynamically generating secrets in a secure and auditable manner.
+- name: Retrieve specific key-value pairs from a user secret in Vault
+  set_fact:
+    specific_key_values: "{{ lookup('hashi_vault', 'secret=user/secrets/johndoe token=' + client_token + ' url=' + host_url + ' namespace=' + hvnamespace) }}"
+  with_items:
+    - username
+    - email
+    - role
+  register: specific_key_value_results
 
-**Steps to Replace Ansible Vault with HashiCorp Vault**:
-
-1. **Install and Configure HashiCorp Vault**:
-   - Set up and configure HashiCorp Vault on a secure server.
-   - Define access policies and authentication methods for Vault.
-
-2. **Store Secrets in HashiCorp Vault**:
-   - Use the Vault CLI or API to securely store secrets, such as passwords or API keys, within Vault.
-
-3. **Integrate HashiCorp Vault with Ansible**:
-   - Configure Ansible to use Vault as a secrets provider.
-   - Install the necessary Ansible Vault plugins for HashiCorp Vault integration.
-
-4. **Adjust Playbooks and Modules**:
-   - Replace sensitive data in your Ansible playbooks and modules with references to secrets stored in HashiCorp Vault.
-
-5. **Retrieve Secrets at Runtime**:
-   - When running an Ansible playbook or module, HashiCorp Vault will be used to dynamically fetch the required secrets.
-
-6. **Implement Role-Based Access Control**:
-   - Define appropriate policies and roles in HashiCorp Vault to control access to secrets based on your organization's requirements.
-
-7. **Test and Validate**:
-   - Thoroughly test the integration to ensure that Ansible seamlessly retrieves secrets from HashiCorp Vault during playbook execution.
-
-By following these steps, you can enhance the security and management of sensitive data within your Ansible workflows by leveraging the capabilities of HashiCorp Vault.
+- name: Output specific key-value pairs
+  debug:
+    msg: "Key: {{ item.item }}, Value: {{ item.specific_key_values[item.item] }}"
+  loop: "{{ specific_key_value_results.results }}"
