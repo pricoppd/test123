@@ -1,23 +1,19 @@
-- name: Retrieve a secret and specific key value
-  set_fact:
-    specific_key_value: "{{ lookup('hashi_vault', 'secret=bla/joy/secret/kv/paul/secret1:{{ item }} token={{ token }} url={{ host_url }}') }}"
-  with_items:
-    - githubuser
-    - githubpassword
-  register: specific_key_value_results
+provider "azurerm" {
+  features {
+    template_deployment {
+      delete_nested_items_during_deletion = false
+    }
+  }
 
-- name: Create a dictionary with key-value pairs
-  set_fact:
-    secret_dict: {}
-  run_once: yes
+  use_azuread_auth = true
+}
 
-- name: Populate the dictionary
-  set_fact:
-    secret_dict: "{{ secret_dict | combine({ specific_key_value_results.results[item_idx].item: specific_key_value_results.results[item_idx].ansible_facts.specific_key_value }) }}"
-  loop: "{{ range(0, specific_key_value_results.results | length) | list }}"
-  loop_control:
-    index_var: item_idx
+provider "random" {}
 
-- name: Display the secret dictionary
-  debug:
-    var: secret_dict
+terraform {
+  backend "azurerm" {
+    // Configuration for Azure Storage backend, if applicable
+  }
+}
+
+provider "null" {}
