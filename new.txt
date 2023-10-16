@@ -2,3 +2,5 @@ az storage blob delete --container-name <container-name> --name <blob-name> --ac
 az storage blob show --container-name <container-name> --name <blob-name> --account-name <storage-account-name> --account-key <storage-account-key>
 
 az storage blob lease break --container-name <container-name> --blob-name <blob-name> --account-name <storage-account-name> --account-key <storage-account-key> --lease-id <lease-id>
+
+In the context of Azure Blob Storage, "blob lease break" refers to the action of forcefully breaking a lease on a blob. A blob lease is a mechanism that allows you to lock a blob to prevent other operations from modifying or deleting it. Blob leases are often used to implement scenarios such as distributed coordination, ensuring exclusive access to a blob, or preventing accidental modifications.
