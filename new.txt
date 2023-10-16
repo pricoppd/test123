@@ -1,2 +1,4 @@
 az storage blob delete --container-name <container-name> --name <blob-name> --account-name <storage-account-name> --account-key <storage-account-key>
+az storage blob show --container-name <container-name> --name <blob-name> --account-name <storage-account-name> --account-key <storage-account-key>
+
 az storage blob lease break --container-name <container-name> --blob-name <blob-name> --account-name <storage-account-name> --account-key <storage-account-key> --lease-id <lease-id>
