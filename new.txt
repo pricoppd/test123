@@ -9,3 +9,6 @@ resource "null_resource" "delay" {
 }
 
 String random_pwd = java.util.Base64.getEncoder().encodeToString(new byte[12]).substring(0, 12);
+
+
+random_pwd = org.apache.commons.lang.RandomStringUtils.random(12, true, true)
