@@ -12,3 +12,10 @@ String random_pwd = java.util.Base64.getEncoder().encodeToString(new byte[12]).s
 
 
 random_pwd = org.apache.commons.lang.RandomStringUtils.random(12, true, true)
+
+open_ai = {
+  "deployment1" = {
+    "name"    = "gpd",
+    "version" = "1"
+  }
+}
