@@ -1,21 +1,8 @@
-resource "null_resource" "delay" {
-  provisioner "local-exec" {
-    command = "sleep 60"  # Sleep for 60 seconds
+app_settings = merge(
+      tomap({
+        "APPINSIGHTS_INSTRUMENTATIONKEY" = azurerm_application_insights.appinsights.instrumentation_key
+        "APPLICATIONINSIGHTS_CONNECTION_STRING" = azurerm_application_insights.appinsights.connection_string
+      }),
+      local.app_settings
+    )
   }
-
-  triggers = {
-    always_run = "${timestamp()}"
-  }
-}
-
-String random_pwd = java.util.Base64.getEncoder().encodeToString(new byte[12]).substring(0, 12);
-
-
-random_pwd = org.apache.commons.lang.RandomStringUtils.random(12, true, true)
-
-open_ai = {
-  "deployment1" = {
-    "name"    = "gpd",
-    "version" = "1"
-  }
-}
