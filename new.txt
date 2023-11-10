@@ -1,8 +1,27 @@
-app_settings = merge(
-      tomap({
-        "APPINSIGHTS_INSTRUMENTATIONKEY" = azurerm_application_insights.appinsights.instrumentation_key
-        "APPLICATIONINSIGHTS_CONNECTION_STRING" = azurerm_application_insights.appinsights.connection_string
-      }),
-      local.app_settings
-    )
-  }
+An Azure App Service Plan and an Azure Web App with a Private Endpoint work together to provide a secure and isolated environment for hosting web applications. Here's how they work together:
+
+App Service Plan (ASP): An App Service Plan represents the compute resources and configuration settings that determine the scale and capacity for your web app. It defines the underlying infrastructure, including the number of VM instances, CPU, memory, and other characteristics. The App Service Plan also determines the region and pricing tier for your web app.
+
+Azure Web App: The Azure Web App is the platform for hosting your web application code. It runs on the infrastructure provided by the associated App Service Plan. The web app contains your application code and any associated resources like databases, storage, and configuration settings.
+
+Private Endpoint: A Private Endpoint is a network interface that connects your web app securely and privately to a Virtual Network (VNet) within Azure. It provides a private IP address within the VNet and is used to access the web app over a private, isolated network connection.
+
+Here's how these components work together:
+
+When you create a Private Endpoint for your Azure Web App, it connects the web app to a specific subnet within an Azure Virtual Network (VNet).
+
+The VNet can be configured to have its own set of network security policies, including Network Security Groups (NSGs) and route tables, which can control traffic to and from the private endpoint.
+
+The web app is now accessible via a private IP address within the VNet, and this private IP can be used for secure and isolated communication with the web app.
+
+Access to the web app is restricted to resources within the VNet or connected networks, enhancing security and privacy.
+
+In this setup, the web app can also access resources within the VNet or connected networks over the private network connection. For example, it can securely communicate with databases, APIs, and other resources hosted within the VNet or on-premises.
+
+Access to the web app from the public internet is blocked, except for management and administration purposes, which can be controlled through firewall and access control rules.
+
+This configuration is beneficial for scenarios where you need to isolate and secure your web app and its resources, particularly when dealing with sensitive data, compliance requirements, or to reduce exposure to the public internet. It's commonly used in enterprise and security-sensitive applications.
+
+
+
+
