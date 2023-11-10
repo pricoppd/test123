@@ -25,3 +25,15 @@ This configuration is beneficial for scenarios where you need to isolate and sec
 
 
 
+
+
+1. **App Service Plan Integration with VNet:**
+   - An App Service Plan is established and seamlessly integrated with a Virtual Network (VNet).
+   - This integration employs a dedicated subnet, delegated to Microsoft.Web/serverFarms.
+
+2. **Web App Configuration with Private Endpoint:**
+   - A Web App is created and meticulously configured to operate with a Private Endpoint.
+   - The Private Endpoint, in turn, is established within the dedicated subnet exclusively designated for private endpoint usage.
+
+3. **Application Insights Integration:**
+   - Application Insights is deployed and seamlessly linked to the Web App using both the `appinsights_instrumentationkey` and `appinsights_connection_string`.
