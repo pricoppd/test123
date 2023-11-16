@@ -1,3 +1,21 @@
-az network vnet subnet update --resource-group <resource-group-name> --vnet-name <vnet-name> --name <subnet-name> --remove serviceAssociationLinks.<link-id>
-az network vnet subnet show --resource-group <resource-group-name> --vnet-name <vnet-name> --name <subnet-name> --query "serviceAssociationLinks" -o json
 
+    if token is not None:
+        os.environ["GITHUB_CRED"] = token
+    
+    if "GITHUB_CRED" not in os.environ:
+        exit("GITHUB_CRED not defined")
+    
+    token = os.environ["GITHUB_CRED"]
+
+    
+    github = Github(token)
+    return github.get_repo(f"{org}/{repo}")
+
+
+    if token is not None:
+        os.environ["GITHUB_CRED"] = token
+    
+    # Get the last commit from the pull request
+    pr = get_github(gitorg, gitRepo)
+
+    
