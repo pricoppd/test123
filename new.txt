@@ -1,20 +1,10 @@
-def get_github(org: str, repo: str):
-    """
-    Retrieves the specified GitHub repository.
-    
-    Args:
-        org (str): GitHub organization name.
-        repo (str): GitHub repository name.
-    
-    Returns:
-        Repository.Repository: GitHub repository object.
-    """
-    token = os.environ.get("GITHUB_CRED")
-    if token is None:
-        exit("GITHUB_CRED not defined")
-    
-    base_url = "https://alm-github.systems.uk.paul/api/v3"
-    
-    # Instantiate Github with authentication token and retrieve the repository
-    github = Github(token)
-    return github.get_repo(f"{org}/{repo}")
+    - task: PowerShell@2
+      displayName: Check Terraform plan changes
+      inputs:
+        targetType: 'inline'
+        script: |
+          $terraformOutput = Get-Content -Path '$(System.DefaultWorkingDirectory)/terraform-output.txt' -Raw
+          if ($terraformOutput -like "*Terraform will perform*") {
+            Write-Error "Terraform plan detected changes. Failing the stage."
+            exit 1
+          }
