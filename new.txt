@@ -8,3 +8,8 @@
             Write-Error "Terraform plan detected changes. Failing the stage."
             exit 1
           }
+
+
+- powershell: |
+    terraform show -json $(System.DefaultWorkingDirectory)/terraform-output.tfplan > $(System.DefaultWorkingDirectory)/terraform-output.txt
+  displayName: 'Save Terraform Plan Output'
