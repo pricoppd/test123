@@ -20,3 +20,16 @@
     targetType: 'inline'
     script: |
       node --version
+
+
+- task: Bash@3
+  displayName: 'Check Terraform plan changes'
+  inputs:
+    targetType: 'inline'
+    script: |
+      terraformOutput=$(cat "$(System.DefaultWorkingDirectory)/terraform-output.txt")
+
+      if [[ $terraformOutput == *"Terraform will perform"* ]]; then
+        echo "Terraform plan detected changes. Failing the stage."
+        exit 1
+      fi
