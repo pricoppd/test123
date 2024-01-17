@@ -46,3 +46,18 @@
             echo "Terraform plan detected changes. Failing the stage."
             exit 1
           ```
+stages:
+- stage: BashOnlyStage
+  displayName: 'Bash Only Stage'
+  jobs:
+  - job: RunBashScript
+    displayName: 'Run Bash Script'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: Bash@3
+      displayName: 'Run Bash Script'
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo "Hello from Bash task!"
