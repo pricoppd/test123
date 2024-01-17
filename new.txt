@@ -89,3 +89,18 @@ ________________________________________________________________________________
   displayName: 'Check the Terraform plan'
   workingDirectory: '$(Build.SourcesDirectory)/$(parameters.SourceRepositoryName)/env'
 
+
+# Run Terraform plan and save the output to a file
+terraform plan -out=tfplan
+
+# Show the plan in text format and save it to a file
+terraform show -no-color tfplan > tfplan.txt
+
+# Check if the "No changes" message is present in the output
+if ! grep -q "No changes. Your infrastructure matches the configuration." tfplan.txt; then
+    echo "Terraform plan detected changes. Failing the stage."
+    exit 1
+else
+    echo "No changes detected in the Terraform plan. Proceeding with the stage."
+fi
+
