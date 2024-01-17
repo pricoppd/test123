@@ -73,3 +73,19 @@ terraformOutput=$(cat "$(System.DefaultWorkingDirectory)/tfplan")
           fi
 
 terraform show -no-color -json "$(Build.SourcesDirectory)/$(SourceRepositoryName)/tf.tfplan" > $(Build.ArtifactStagingDirectory)/terraform-output.txt
+
+
+______________________________________________________________________________________________________
+
+- script: |
+    terraform show -no-color -json "$(Build.SourcesDirectory)/$(parameters.SourceRepositoryName)/tf.tfplan"
+    terraform show -no-color -json "$(Build.SourcesDirectory)/$(parameters.SourceRepositoryName)/tf.tfplan" > $(System.DefaultWorkingDirectory)/terraform-output.txt
+
+    # Check for changes and fail the stage if FailOnChanges is true
+    if [[ $(terraform show -no-color -json "$(Build.SourcesDirectory)/$(parameters.SourceRepositoryName)/tf.tfplan") != "null" && $(parameters.FailOnChanges) == true ]]; then
+        echo "Terraform plan detected changes. Failing the stage."
+        exit 1
+    fi
+  displayName: 'Check the Terraform plan'
+  workingDirectory: '$(Build.SourcesDirectory)/$(parameters.SourceRepositoryName)/env'
+
