@@ -61,3 +61,13 @@ stages:
         targetType: 'inline'
         script: |
           echo "Hello from Bash task!"
+____________________________________________
+
+terraformOutput=$(cat "$(System.DefaultWorkingDirectory)/tfplan")
+
+          if [[ $terraformOutput == *"Terraform will perform"* ]]; then
+            echo "Terraform plan detected changes. Failing the stage."
+            exit 1
+          else
+            echo "No Terraform plan changes detected."
+          fi
