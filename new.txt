@@ -104,3 +104,7 @@ else
     echo "No changes detected in the Terraform plan. Proceeding with the stage."
 fi
 
+if [[ ! $terraformOutput == *"No changes. Your infrastructure matches the configuration."* ]]; then
+  echo "Terraform plan detected changes. Failing the stage."
+  exit 1
+fi
