@@ -13,3 +13,10 @@
 - powershell: |
     terraform show -json $(System.DefaultWorkingDirectory)/terraform-output.tfplan > $(System.DefaultWorkingDirectory)/terraform-output.txt
   displayName: 'Save Terraform Plan Output'
+
+- task: PowerShell@2
+  displayName: 'Check Node.js version'
+  inputs:
+    targetType: 'inline'
+    script: |
+      node --version
