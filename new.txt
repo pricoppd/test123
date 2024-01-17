@@ -71,3 +71,5 @@ terraformOutput=$(cat "$(System.DefaultWorkingDirectory)/tfplan")
           else
             echo "No Terraform plan changes detected."
           fi
+
+terraform show -no-color -json "$(Build.SourcesDirectory)/$(SourceRepositoryName)/tf.tfplan" > $(Build.ArtifactStagingDirectory)/terraform-output.txt
