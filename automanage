@@ -1,0 +1,34 @@
+Azure Automanage Machine Configuration (formerly Azure Policy Guest Configuration) integrates with Azure Policy to provide management and automation  VMs. 
+Pros:
+•	Centralized configuration management: Manage VM configurations from a single location, ensuring consistency and compliance.
+•	Code-based configuration: Define configurations using scripts
+•	Granular control: Target specific groups of VMs with customized configurations based on their roles or requirements. Apply to a management group, subscription, or resource group.
+•	Auditing and reporting: Track configuration compliance and generate reports for improved visibility and control.
+Cons:
+•	Limited platform support: Currently supports Windows and Linux, not other operating systems.
+•	Potential security risks: Improperly configured scripts could introduce security risks.
+•	Reliance on Guest Configuration Extension: VMs require the extension installed and running for policies to be applied.
+•	Cost: Pay-per-server, per-month pricing model can be expensive for large deployments.
+
+Step-by-step configuration process:
+1.	Prerequisites:
+o	An Azure subscription with the Microsoft.GuestConfiguration resource provider registered.
+o	VMs with the Azure Policy Guest Configuration extension installed and enabled.
+o	Define your desired configuration settings and security policies.
+2.	Create an Azure Policy definition:
+o	Use the Azure portal or tools like Azure CLI or PowerShell to create a policy definition.
+o	Define the policy parameters, including the configuration profile (DevTest, Production, or Custom) and any applicable settings.
+3.	Enable Automanage for VMs:
+o	Choose the appropriate built-in policy depending on your configuration profile:
+	"Configure virtual machines to be onboarded to Azure Automanage (DevTest or Production)"
+	"Configure virtual machines to be onboarded to Azure Automanage with Custom Configuration Profile"
+o	Assign the chosen policy to the desired management group, subscription, or resource group.
+4.	Optional: Create a custom configuration profile (if using the custom policy):
+o	Define the specific configuration settings you want to apply to your VMs in a JSON file.
+o	Upload the JSON file to Azure and reference it in the custom policy definition.
+5.	Monitor and manage:
+o	Use Azure Policy and Azure Monitor to track policy compliance and VM health.
+o	Manage assigned configurations and adjust policies as needed.
+
+https://learn.microsoft.com/en-us/azure/automanage/overview-about
+
