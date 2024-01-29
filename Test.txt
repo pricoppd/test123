@@ -42,3 +42,22 @@ dynamic "admin_ssh_key" {
 These versions are designed to handle the case where `admin_ssh_public_key` is a list of strings. If `admin_ssh_public_key` is empty, it will either use `[null]` or `[1]` as a placeholder to ensure that the dynamic block is created.
 
 Make sure to use the corrected variable declaration for `admin_ssh_public_key` as a list of strings in your Terraform code. If you encounter any issues or have further questions, feel free to ask!
+
+
+
+variable "admin_ssh_public_keys" {
+  type    = list(string)
+  default = []
+}
+
+dynamic "admin_ssh_key" {
+  for_each = var.admin_ssh_public_keys != [] ? toset(var.admin_ssh_public_keys) : [null]
+
+  content {
+    username    = var.admin_username
+    public_key  = admin_ssh_key.value
+  }
+}
+
+
+
