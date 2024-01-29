@@ -1,0 +1,44 @@
+It seems there might be a mismatch in the variable type declaration for `admin_ssh_public_key`. The `default` value you provided is a string, but the `type` is declared as `string`. If you intend to have multiple SSH public keys (which seems likely based on the previous discussion), you should declare it as a list of strings. Here's the corrected variable declaration:
+
+```hcl
+variable "admin_ssh_public_key" {
+  type        = list(string)
+  sensitive   = true
+  default     = ["ssh-rsa FAIjferj209332j0rj209rj32r9j32r0932jr28h9hf4wiejf02jf0932jf-32jf-932j"]
+}
+```
+
+Now, `admin_ssh_public_key` is declared as a list of strings. If you have multiple SSH public keys, you can add them to the list. The `sensitive = true` option is also included to treat the variable as sensitive, which means its values won't be shown in logs or command output.
+
+Make sure to update your Terraform code accordingly, especially in the dynamic block we discussed earlier.
+
+
+Yes, both Version 1 and Version 2 provided in earlier responses should work with the updated variable declaration for `admin_ssh_public_key` as a list of strings. Here's a recap:
+
+### Version 1:
+```hcl
+dynamic "admin_ssh_key" {
+  for_each = var.admin_ssh_public_key != [] ? toset(var.admin_ssh_public_key) : [null]
+
+  content {
+    username    = var.admin_username
+    public_key  = admin_ssh_key.value
+  }
+}
+```
+
+### Version 2:
+```hcl
+dynamic "admin_ssh_key" {
+  for_each = var.admin_ssh_public_key != [] ? [1] : []
+
+  content {
+    username    = var.admin_username
+    public_key  = var.admin_ssh_public_key[0]
+  }
+}
+```
+
+These versions are designed to handle the case where `admin_ssh_public_key` is a list of strings. If `admin_ssh_public_key` is empty, it will either use `[null]` or `[1]` as a placeholder to ensure that the dynamic block is created.
+
+Make sure to use the corrected variable declaration for `admin_ssh_public_key` as a list of strings in your Terraform code. If you encounter any issues or have further questions, feel free to ask!
