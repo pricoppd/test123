@@ -1,0 +1,129 @@
+Here's a formatted version of the information you provided:
+
+---
+
+### Azure Automanage (formerly Azure Policy Guest Configuration)
+
+**Pros:**
+- **Centralized configuration management:** Manage VM configurations from a single location, ensuring consistency and compliance.
+- **Code-based configuration:** Define configurations using scripts.
+- **Granular control:** Target specific groups of VMs with customized configurations based on their roles or requirements. Apply to a management group, subscription, or resource group.
+- **Auditing and reporting:** Track configuration compliance and generate reports for improved visibility and control.
+
+**Cons:**
+- **Limited platform support:** Currently supports Windows and Linux, not other operating systems.
+- **Potential security risks:** Improperly configured scripts could introduce security risks.
+- **Reliance on Guest Configuration Extension:** VMs require the extension installed and running for policies to be applied.
+- **Cost:** Pay-per-server, per-month pricing model can be expensive for large deployments.
+
+**Key Points:**
+- Change tracking is not available when using AAMC independently.
+- Enroll in Azure Automanage to access the change tracking feature.
+
+**Configuration Process:**
+1. **Prerequisites:**
+   - Azure subscription with the Microsoft.GuestConfiguration resource provider registered.
+   - VMs with the Azure Policy Guest Configuration extension installed and enabled.
+   - Define desired configuration settings and security policies.
+2. **Create an Azure Policy definition:**
+   - Use Azure portal, Azure CLI, or PowerShell to create a policy definition.
+   - Define policy parameters, including the configuration profile (DevTest, Production, or Custom) and any applicable settings.
+3. **Enable Automanage for VMs:**
+   - Choose the appropriate built-in policy depending on the configuration profile.
+   - Assign the chosen policy to the desired management group, subscription, or resource group.
+4. **Optional: Create a custom configuration profile (if using the custom policy):**
+   - Define specific configuration settings in a JSON file.
+   - Upload the JSON file to Azure and reference it in the custom policy definition.
+5. **Monitor and manage:**
+   - Use Azure Policy and Azure Monitor to track policy compliance and VM health.
+   - Manage assigned configurations and adjust policies as needed.
+
+---
+
+### Ansible
+
+**Overview:**
+Ansible is an open-source automation tool that enables configuration management, application deployment, and task automation. It uses YAML syntax for defining automation tasks.
+
+**Pros:**
+1. **Flexibility and Customization:**
+   - Ansible allows for a high degree of flexibility in defining automation tasks through its declarative YAML syntax.
+2. **Multi-Cloud Support:**
+   - Not limited to any specific cloud provider, including Azure. Supports multi-cloud environments.
+3. **Agentless Architecture:**
+   - Operates in an agentless mode, simplifying deployment and reducing potential security risks.
+4. **Community and Ecosystem:**
+   - Large and active community, providing extensive support, documentation, and a rich ecosystem of roles and modules.
+5. **Idempotent Nature:**
+   - Designed to be idempotent, ensuring consistency and reliability in configuration management tasks.
+
+**Cons:**
+1. **Learning Curve:**
+   - YAML syntax and Ansible-specific concepts may pose a learning curve for some users.
+2. **Limited Native Integrations:**
+   - May lack some native integrations and features available in Azure-native tools.
+3. **Stateful Operations Challenges:**
+   - Primarily designed for stateless operations; managing stateful applications may require additional considerations.
+4. **Less Suited for Real-Time Monitoring:**
+   - Primarily focused on configuration management and automation, not real-time monitoring.
+5. **Steep Initial Setup for Large Environments:**
+   - Initial setup for large and complex environments may be challenging.
+
+**Configuration Process:**
+- Define Pipeline Stages:
+  - Stage 1: Terraform deployment.
+  - Stage 2: Ansible configuration.
+- Configure Ansible Stage:
+  - Define an Ansible task in the second stage.
+  - Secure Credentials:
+    - Use Azure Key Vault to store sensitive credentials.
+    - Access secrets in your pipeline using Azure Pipelines variables.
+  - Store Ansible Scripts in Azure Storage:
+    - Upload scripts and configuration files to an Azure Storage container.
+  - Generate SAS Token:
+    - Generate a SAS token for the Azure Storage container.
+  - Download Scripts in Azure DevOps Pipeline:
+    - During the pipeline execution, use a script or task to download scripts from Azure Storage.
+  - Run the Scripts:
+    - Run the scripts/playbooks as a task after the virtual machine/s are deployed.
+
+---
+
+### Terraform with Custom Script Extension
+
+**Overview:**
+Terraform allows the definition of infrastructure as code, enabling a standardized, version-controlled, and reproducible approach to infrastructure provisioning.
+
+**Pros:**
+1. **Infrastructure as Code (IaC) Approach:**
+   - Enables standardized, version-controlled, and reproducible infrastructure provisioning.
+2. **Cross-Platform Compatibility:**
+   - Supports multiple cloud providers and infrastructure platforms.
+3. **Declarative Configuration Language:**
+   - Uses a declarative configuration language, reducing the risk of configuration drift.
+4. **Customization with Script Extension:**
+   - Allows execution of custom scripts on virtual machines for additional customization.
+5. **Scalability and Reusability:**
+   - Configurations can be designed for scalability and reusability.
+
+**Cons:**
+1. **Scripts Not Captured in State:**
+   - Execution of scripts using the Terraform Custom Script Extension is typically not captured in the Terraform state.
+2. **Potential for Complexity in Configurations:**
+   - Managing Terraform configurations may become challenging as configurations grow in complexity.
+3. **Dependency on External Scripts:**
+   - Custom Script Extension introduces a dependency on external scripts, requiring careful management and versioning.
+4. **Limited Native Error Handling:**
+   - Terraform error handling is limited, making debugging complex configurations challenging.
+5. **State Management Challenges:**
+   - Managing and maintaining the Terraform state file can become a challenge, especially in distributed or collaborative environments.
+
+**Configuration Process:**
+- Store Ansible Scripts in Azure Storage:
+  - Upload scripts and configuration files to an Azure Storage container.
+- Generate SAS Token:
+  - Generate a SAS token for the Azure Storage container.
+- Download Scripts in Azure DevOps Pipeline:
+  - During the pipeline execution, use a script or task to download scripts from Azure Storage.
+- Run the Scripts:
+  - Run the scripts using the Terraform extension.
