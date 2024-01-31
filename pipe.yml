@@ -75,3 +75,10 @@ steps:
       }
   pwsh: true
   workingDirectory: '$(Build.SourcesDirectory)/$(variables.SourceRepositoryName)'
+
+
+  
+  steps:
+- script: echo "System.TeamProject: $(System.TeamProject), SourceRepositoryName: $(variables.SourceRepositoryName), Build.SourceBranch: $(Build.SourceBranch)"
+  displayName: 'Print Variables'
+
