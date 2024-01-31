@@ -30,43 +30,6 @@ foreach ($definition in $definitions) {
 
 
 
-Azure provides its own set of modules and features that are designed to work seamlessly with its services. Azure-native tools may have modules specifically built for interacting with Azure services, taking advantage of the latest features and updates. While Ansible does have Azure modules, they may not cover every Azure service or may not be as feature-rich as those provided by Azure-native tools.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 $imagegallerydefinitioninfo = Get-AzGalleryImageDefinition -GalleryName $imagegallery.Name -ResourceGroupName $imagegallery.ResourceGroupName
 $imagegallerydefinitioninfo | ForEach-Object {
     $imagegallerydefinitionname = $_.Name
@@ -74,22 +37,6 @@ $imagegallerydefinitioninfo | ForEach-Object {
 
     # Process the gallery image version here
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 #!/bin/bash
@@ -129,7 +76,9 @@ done
 
 
 
-
+# Validate Terraform code
+    validate_output=$(terraform validate -check-variables=true -no-color)
+    echo "$validate_output"
 
 
 
