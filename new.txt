@@ -111,3 +111,156 @@ if [[ ! $terraformOutput == *"No changes. Your infrastructure matches the config
   echo "Terraform plan detected changes. Failing the stage."
   exit 1
 fi
+_______________________________________________________________________________________________________________________________________________________
+
+trigger: none
+
+pool:
+  vmImage: "ubuntu-latest"
+
+variables:
+  - group: 'azure'
+  - name: SourceRepositoryName
+    value: '$(Build.SourceBranchName)'  # Use the branch name dynamically
+    readOnly: true
+
+steps:
+- checkout: self
+  persistCredentials: true
+  clean: true
+  displayName: 'Checkout Pull request source branch'
+
+- task: Bash@3
+  displayName: 'Check and install Zip'
+  script: |
+    if [ ! -x "$(command -v zip)" ]; then
+      echo "Zip not installed"
+      sudo apt-get update
+      sudo apt-get install zip -y
+    fi
+  retryCountOnTaskFailure: 3
+
+- task: Bash@3
+  displayName: 'Install pwsh'
+  script: |
+    sudo apt-get update
+    sudo apt-get install -y powershell
+  retryCountOnTaskFailure: 3
+
+- task: TerraformInstaller
+  displayName: 'Terraform Install'
+  inputs:
+    terraformVersion: '1.7.1'
+    terraformLocation: 'inline'
+
+- task: PowerShell@2
+  displayName: 'Terraform fmt check'
+  inputs:
+    targetType: 'inline'
+    script: |
+      $output = terraform fmt --recursive
+      if (-not $output) {
+        Write-Host "terraform fmt found no issues. Moving on."
+      } else {
+        Write-Error "terraform fmt found issues. Please run terraform fmt locally to format your code and push to your branch."
+      }
+  pwsh: true
+  workingDirectory: '$(Build.SourcesDirectory)/$(variables.SourceRepositoryName)'
+
+- task: PowerShell@2
+  displayName: 'Terraform validate'
+  inputs:
+    targetType: 'inline'
+    script: |
+      $validateOutput = terraform validate -json
+      if ($validateOutput -eq "[]") {
+        Write-Host "terraform validate succeeded. Moving on."
+      } else {
+        Write-Error "terraform validate failed. Please check the following issues: $($validateOutput -join ', ')"
+      }
+  pwsh: true
+  workingDirectory: '$(Build.SourcesDirectory)/$(variables.SourceRepositoryName)'
+
+
+______________________________________________________________________________________________________________________________________-
+
+trigger: none
+
+pool:
+  vmImage: "ubuntu-latest"
+
+variables:
+  - group: 'Azure'
+  - name: SourceRepositoryName
+    value: '$(Build.SourceBranchName)'  # Use the branch name dynamically
+    readOnly: true
+
+steps:
+- checkout: self
+  persistCredentials: true
+  clean: true
+  displayName: 'Checkout Pull request source branch'
+
+- task: Bash@3
+  displayName: 'Check and install Zip'
+  script: |
+    if [ ! -x "$(command -v zip)" ]; then
+      echo "Zip not installed"
+      sudo apt-get update
+      sudo apt-get install zip -y
+    fi
+  retryCountOnTaskFailure: 3
+
+- task: Bash@3
+  displayName: 'Install pwsh'
+  script: |
+    sudo apt-get update
+    sudo apt-get install -y powershell
+  retryCountOnTaskFailure: 3
+
+- task: TerraformInstaller
+  displayName: 'Terraform Install'
+  inputs:
+    terraformVersion: '1.7.1'
+    terraformLocation: 'inline'
+
+- task: PowerShell@2
+  displayName: 'Terraform fmt check'
+  inputs:
+    targetType: 'inline'
+    script: |
+      $output = terraform fmt --recursive
+      if (-not $output) {
+        Write-Host "terraform fmt found no issues. Continue..."
+      } else {
+        Write-Error "terraform fmt found issues. Please run terraform fmt locally to format your code and push to your branch."
+      }
+  pwsh: true
+  workingDirectory: '$(Build.SourcesDirectory)/$(variables.SourceRepositoryName)'
+
+- task: PowerShell@2
+  displayName: 'TFLint Install'
+  inputs:
+    targetType: 'inline'
+    script: |
+      wget https://github.com/terraform-linters/tflint/releases/download/v0.29.0/tflint_linux_amd64.zip
+      unzip tflint_linux_amd64.zip
+      sudo mv tflint /usr/local/bin/
+      rm tflint_linux_amd64.zip
+  pwsh: true
+  workingDirectory: '$(Build.SourcesDirectory)/$(variables.SourceRepositoryName)'
+
+- task: PowerShell@2
+  displayName: 'TFLint check'
+  inputs:
+    targetType: 'inline'
+    script: |
+      $tflintOutput = tflint
+      if (-not $tflintOutput) {
+        Write-Host "TFLint found no issues. Continue..."
+      } else {
+        Write-Error "TFLint found issues. Please check the following issues: $($tflintOutput -join ', ')"
+      }
+  pwsh: true
+  workingDirectory: '$(Build.SourcesDirectory)/$(variables.SourceRepositoryName)'
+
