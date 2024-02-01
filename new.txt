@@ -1,3 +1,17 @@
+- task: Bash@3
+  displayName: 'Install pwsh if not installed'
+  script: |
+    if [ ! -x "$(command -v pwsh)" ]; then
+      echo "Installing PowerShell..."
+      sudo apt-get update
+      sudo apt-get install -y powershell
+    else
+      echo "PowerShell is already installed. Continuing to the next step."
+    fi
+  retryCount: 3
+
+
+
 # Run terraform validate
       terraform init -backend=false
       terraform validate -json > validation_result.json
