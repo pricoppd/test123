@@ -1,3 +1,30 @@
+parameters:
+- name: Region
+  default: ''
+- name: SourceRepositoryName
+  default: ''
+- name: TfvarsName
+  default: ''
+- name: StateName
+  default: ''
+
+trigger: none
+
+variables:
+  - group: 'IaC_General_UKS'
+  - name: SourceRepositoryName
+    value: ${{ parameters.SourceRepositoryName }}
+    readonly: true
+  - name: TfvarsName
+    value: ${{ parameters.TfvarsName }}
+    readonly: true
+  - name: StateName
+    value: ${{ parameters.StateName }}
+    readonly: true
+
+
+
+
 - task: PowerShell@2
   displayName: 'Terraform validate'
   inputs:
