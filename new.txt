@@ -1,3 +1,8 @@
+Write-Host "##[group]TFLint Information"
+      Write-Host "This task checks Terraform files using TFLint to ensure best practices and coding standards are followed."
+      Write-Host "Working Directory: $(WorkingDirectory)"
+      Write-Host "##[endgroup]"
+
 echo -e "\e[1;31mTerraform plan detected changes. Failing the stage.\e[0m"
 
 
