@@ -1,3 +1,33 @@
+- task: PowerShell@2
+  displayName: 'Terraform validate'
+  inputs:
+    targetType: 'inline'
+    script: |
+      Write-Host "##[group]Terraform validate"
+      Write-Host "Checks the syntax and validity of Terraform code. It checks for errors in the code, ensuring that the configuration is correctly written."
+      Write-Host "Working Directory: $(variables.CustomPath)"
+      Write-Host "##[endgroup]"
+      
+      Write-Host "Run terraform init"
+      terraform init -backend=false
+      
+      Write-Host "Run terraform validate"
+      terraform validate -json > validation_result.json
+      
+      Write-Host "Check if errors were found"
+      if ((Get-Content validation_result.json | Out-String).Trim().Length -gt 0) {
+        Write-Error "Errors were found during Terraform validation:"
+        Get-Content validation_result.json | Out-String
+        exit 1
+      } else {
+        Write-Host "No validation errors found. Proceeding further."
+      }
+    pwsh: true
+    workingDirectory: '$(variables.CustomPath)'
+
+
+
+
 - task: Bash@3
   displayName: 'Install pwsh if not installed'
   script: |
