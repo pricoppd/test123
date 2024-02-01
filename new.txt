@@ -3,6 +3,16 @@ Write-Host "##[group]TFLint Information"
       Write-Host "Working Directory: $(WorkingDirectory)"
       Write-Host "##[endgroup]"
 
+Sure, here are short definitions for `terraform fmt` and `terraform validate`:
+
+1. **`terraform fmt`:**
+   - **Purpose:** Enforces consistent formatting in Terraform code.
+   - **Description:** `terraform fmt` is a command-line tool that automatically updates and standardizes the formatting of Terraform configuration files to adhere to the official style conventions. It helps maintain a consistent and readable code style across the entire codebase.
+
+2. **`terraform validate`:**
+   - **Purpose:** Checks the syntax and validity of Terraform code.
+   - **Description:** `terraform validate` is a command used to perform a syntax check on Terraform configuration files. It checks for errors in the code, ensuring that the configuration is correctly written and follows the expected Terraform language syntax. This step is crucial before applying changes to infrastructure to avoid potential issues during deployment.
+
 echo -e "\e[1;31mTerraform plan detected changes. Failing the stage.\e[0m"
 
 
