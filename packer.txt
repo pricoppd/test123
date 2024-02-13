@@ -1,4 +1,4 @@
-# Packer template for building an Azure image from an ISO file and storing it in Shared Image Gallery
+# Packer template for building a sysprepped Windows image from an ISO file and storing it in Shared Image Gallery
 
 packer {
   required_plugins {
@@ -14,7 +14,7 @@ source "azure-arm" "iso_source" {
   image_publisher         = "YourPublisherName"
   image_offer             = "YourImageOffer"
   image_sku               = "YourImageSKU"
-  os_type                 = "Linux" # or "Windows" based on your ISO
+  os_type                 = "Windows"
   location                = "YourAzureRegion"
 }
 
@@ -24,22 +24,23 @@ build {
   provisioner "shell" {
     inline = [
       # Add any custom provisioning scripts or commands here
-      # For example, you might want to install additional software or configure settings.
+
+      # Run sysprep
+      "C:\\Windows\\System32\\Sysprep\\sysprep.exe /generalize /oobe /shutdown /quiet",
     ]
   }
 
   post-processor "azure-managed-image" {
-    image_name      = "packer-iso-image"
+    image_name            = "packer-iso-image"
     image_resource_group = "YourImageResourceGroup"
-    gallery_image_name = "YourGalleryImageName"
-    gallery_name        = "YourSharedImageGallery"
+    gallery_image_name    = "YourGalleryImageName"
+    gallery_name          = "YourSharedImageGallery"
     gallery_resource_group = "YourSharedImageGalleryResourceGroup"
-    sas_uri           = "YourSharedAccessSignatureURI"
+    sas_uri               = "YourSharedAccessSignatureURI"
   }
 }
 
 variables {
-  # Define any required variables here
   subscription_id        = "YourAzureSubscriptionID"
   client_id              = "YourServicePrincipalClientID"
   client_secret          = "YourServicePrincipalClientSecret"
@@ -50,7 +51,6 @@ variables {
   iso_blob_name          = "YourISOFileName.iso"
 }
 
-# Azure authentication details
 provider "azurerm" {
   features = {}
   subscription_id = var.subscription_id
@@ -59,13 +59,11 @@ provider "azurerm" {
   tenant_id       = var.tenant_id
 }
 
-# Azure Storage details
 data "azurerm_storage_account" "iso_storage" {
   name                = var.storage_account
   resource_group_name = var.resource_group
 }
 
-# Generate the Shared Access Signature (SAS) URI for the ISO file
 data "azurerm_storage_account_sas" "iso_sas" {
   connection_string = data.azurerm_storage_account.iso_storage.primary_connection_string
   start             = "2024-01-01"
@@ -77,7 +75,6 @@ data "azurerm_storage_account_sas" "iso_sas" {
   }
 }
 
-# Set the SAS URI in a variable
 variable "iso_sas_uri" {
   default = data.azurerm_storage_account_sas.iso_sas.sas
 }
