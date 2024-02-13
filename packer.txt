@@ -1,0 +1,83 @@
+# Packer template for building an Azure image from an ISO file and storing it in Shared Image Gallery
+
+packer {
+  required_plugins {
+    azure = {
+      version = ">= 2.0.0"
+      source  = "hashicorp/azurerm"
+    }
+  }
+}
+
+source "azure-arm" "iso_source" {
+  managed_image_name      = "packer-iso-image"
+  image_publisher         = "YourPublisherName"
+  image_offer             = "YourImageOffer"
+  image_sku               = "YourImageSKU"
+  os_type                 = "Linux" # or "Windows" based on your ISO
+  location                = "YourAzureRegion"
+}
+
+build {
+  sources = ["source.azure-arm.iso_source"]
+
+  provisioner "shell" {
+    inline = [
+      # Add any custom provisioning scripts or commands here
+      # For example, you might want to install additional software or configure settings.
+    ]
+  }
+
+  post-processor "azure-managed-image" {
+    image_name      = "packer-iso-image"
+    image_resource_group = "YourImageResourceGroup"
+    gallery_image_name = "YourGalleryImageName"
+    gallery_name        = "YourSharedImageGallery"
+    gallery_resource_group = "YourSharedImageGalleryResourceGroup"
+    sas_uri           = "YourSharedAccessSignatureURI"
+  }
+}
+
+variables {
+  # Define any required variables here
+  subscription_id        = "YourAzureSubscriptionID"
+  client_id              = "YourServicePrincipalClientID"
+  client_secret          = "YourServicePrincipalClientSecret"
+  tenant_id              = "YourAzureTenantID"
+  resource_group         = "YourResourceGroup"
+  storage_account        = "YourStorageAccount"
+  container_name         = "YourContainerName"
+  iso_blob_name          = "YourISOFileName.iso"
+}
+
+# Azure authentication details
+provider "azurerm" {
+  features = {}
+  subscription_id = var.subscription_id
+  client_id       = var.client_id
+  client_secret   = var.client_secret
+  tenant_id       = var.tenant_id
+}
+
+# Azure Storage details
+data "azurerm_storage_account" "iso_storage" {
+  name                = var.storage_account
+  resource_group_name = var.resource_group
+}
+
+# Generate the Shared Access Signature (SAS) URI for the ISO file
+data "azurerm_storage_account_sas" "iso_sas" {
+  connection_string = data.azurerm_storage_account.iso_storage.primary_connection_string
+  start             = "2024-01-01"
+  expiry            = "2025-01-01"
+  resource_types   = ["object"]
+  services          = ["blob"]
+  permissions       = {
+    read = true
+  }
+}
+
+# Set the SAS URI in a variable
+variable "iso_sas_uri" {
+  default = data.azurerm_storage_account_sas.iso_sas.sas
+}
