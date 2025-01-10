@@ -1,3 +1,26 @@
+stages:
+- stage: PublishArtifact
+  displayName: Publish Artifact to Nexus
+  jobs:
+  - job: PackageAndUpload
+    displayName: Package and Upload Artifact
+    steps:
+    - script: |
+        zip -r $(appPackageName) . -x ".git"
+      workingDirectory: $(System.DefaultWorkingDirectory)
+      displayName: "Package Build"
+      enabled: true
+
+    - script: |
+        curl -v --user $(nexususername):$(nexuspassword) \
+             --upload-file $(appPackageName) \
+             $(artifactRepo)/$(appName)/$(appPackageName)
+      workingDirectory: $(System.DefaultWorkingDirectory)
+      displayName: "Publish Artifact in Nexus"
+      enabled: true
+
+
+
 parameters:
 - name: Region
   default: ''
