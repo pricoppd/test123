@@ -2,16 +2,22 @@ variables:
   # Build reason
   - template: dev.yaml
   - name: why
-    value: |
-      ${{ if eq(variables['Build.Reason'], 'PullRequest') }}pr
-      ${{ elseif eq(variables['Build.Reason'], 'Manual') }}manual
-      ${{ elseif eq(variables['Build.Reason'], 'IndividualCI') }}indivci
-      ${{ elseif eq(variables['Build.Reason'], 'Schedule') }}scheduled
-      ${{ else }}other
+    ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
+      value: pr
+    ${{ elseif eq(variables['Build.Reason'], 'Manual') }}:
+      value: manual
+    ${{ elseif eq(variables['Build.Reason'], 'IndividualCI') }}:
+      value: indivci
+    ${{ elseif eq(variables['Build.Reason'], 'Schedule') }}:
+      value: scheduled
+    ${{ else }}:
+      value: other
 
   - name: POOL_NAME
-    value: ""
-  - name: $(Build.DefinitionName)_$(why)_$(Date:yyyyMMdd)
+    value: "bla-multi-cstmg-01-aks-subscription-prod-v2"
+  - name: BuildName
+    value: $(Build.DefinitionName)_$(why)_$(Date:yyyyMMdd)
+
 
 stages:
 - stage: PublishArtifact
