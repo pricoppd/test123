@@ -1,3 +1,18 @@
+variables:
+  # Build reason
+  - template: dev.yaml
+  - name: why
+    value: |
+      ${{ if eq(variables['Build.Reason'], 'PullRequest') }}pr
+      ${{ elseif eq(variables['Build.Reason'], 'Manual') }}manual
+      ${{ elseif eq(variables['Build.Reason'], 'IndividualCI') }}indivci
+      ${{ elseif eq(variables['Build.Reason'], 'Schedule') }}scheduled
+      ${{ else }}other
+
+  - name: POOL_NAME
+    value: ""
+  - name: $(Build.DefinitionName)_$(why)_$(Date:yyyyMMdd)
+
 stages:
 - stage: PublishArtifact
   displayName: Publish Artifact to Nexus
