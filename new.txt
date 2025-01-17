@@ -1,3 +1,29 @@
+cd ./terraform
+
+          # Initialize Terraform with remote backend configuration
+          terraform init -no-color -input=false
+
+          # Generate the plan and save it to a file
+          terraform plan -var-file="variables.tfvars" -out=tfplan
+
+          # Optional: Output the plan in JSON format for review
+          terraform show -json tfplan > tfplan.json
+
+          # Save tfplan to a shared location for the apply step
+          mkdir -p $(System.DefaultWorkingDirectory)/tfplan
+          cp tfplan $(System.DefaultWorkingDirectory)/tfplan/
+
+cd ./terraform
+
+          # Copy the downloaded tfplan to the current directory
+          cp $(System.DefaultWorkingDirectory)/tfplan/tfplan .
+
+          # Apply the plan
+          terraform apply -auto-approve tfplan
+
+
+
+
 variables:
   # Build reason
   - template: dev.yaml
