@@ -1,4 +1,19 @@
-cd ./terraform
+    - task: PublishPipelineArtifact@1
+      displayName: "Publish Terraform Plan"
+      inputs:
+        targetPath: $(System.DefaultWorkingDirectory)/tfplan
+        artifact: tfplan
+
+- task: DownloadPipelineArtifact@2
+      displayName: "Download Terraform Plan Artifact"
+      inputs:
+        artifact: tfplan
+        targetPath: $(System.DefaultWorkingDirectory)/tfplan
+
+
+
+
+ccd ./terraform
 
           # Initialize Terraform with remote backend configuration
           terraform init -no-color -input=false
