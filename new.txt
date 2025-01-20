@@ -1,3 +1,18 @@
+
+# Proxy Address
+$proxyAddress = "http://your-proxy-address:port"  # Replace with your proxy server's address
+
+# Proxy Credentials
+$proxyUsername = "your-username"  # Replace with your username
+$proxyPassword = "your-password"  # Replace with your password
+$proxySecureString = ConvertTo-SecureString $proxyPassword -AsPlainText -Force
+$proxyCredential = New-Object System.Management.Automation.PSCredential($proxyUsername, $proxySecureString)
+
+# Configure PowerShell to Use the Proxy
+[System.Net.WebRequest]::DefaultWebProxy = New-Object System.Net.WebProxy($proxyAddress, $true)
+[System.Net.WebRequest]::DefaultWebProxy.Credentials = $proxyCredential
+
+
 # Define your Azure DevOps organization and Personal Access Token
 $organization = "Contoso"  # Replace with your Azure DevOps organization name
 $personalAccessToken = "<YourPAT>"  # Replace with your Personal Access Token
