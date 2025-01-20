@@ -1,4 +1,57 @@
-    - task: PublishPipelineArtifact@1
+$organization = "<YourOrganization>"  # Replace with your Azure DevOps organization name
+$personalAccessToken = "<YourPAT>"    # Replace with your Azure DevOps Personal Access Token
+$apiVersion = "7.1-preview.4"
+
+# Function to Get Project Details Including EIM
+function Get-ProjectDetailsWithEIM {
+    param (
+        [string]$Organization,
+        [string]$PAT,
+        [string]$APIVersion
+    )
+
+    # API URL to get all projects
+    $projectsUrl = "https://dev.azure.com/$Organization/_apis/projects?api-version=$APIVersion"
+
+    # Get all projects
+    $projectsResponse = Invoke-RestMethod -Uri $projectsUrl -Method Get -Headers @{
+        Authorization = "Basic $([Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$PAT")))"
+    }
+
+    # Loop through each project to get details
+    foreach ($project in $projectsResponse.value) {
+        $projectId = $project.id
+        $projectName = $project.name
+
+        # Get detailed information for the project
+        $projectDetailsUrl = "https://dev.azure.com/$Organization/_apis/projects/$projectId?api-version=$APIVersion"
+        $projectDetails = Invoke-RestMethod -Uri $projectDetailsUrl -Method Get -Headers @{
+            Authorization = "Basic $([Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$PAT")))"
+        }
+
+        # Extract the description (EIM) if available
+        $projectDescription = $projectDetails.description
+        $EIM = if ($projectDescription) {
+            $projectDescription
+        } else {
+            "No EIM Value Available"
+        }
+
+        # Display project details
+        Write-Output "Project Name: $projectName"
+        Write-Output "Project ID: $projectId"
+        Write-Output "EIM: $EIM"
+        Write-Output "---------------------------"
+    }
+}
+
+# Call the function
+Get-ProjectDetailsWithEIM -Organization $organization -PAT $personalAccessToken -APIVersion $apiVersion
+
+
+
+
+- task: PublishPipelineArtifact@1
       displayName: "Publish Terraform Plan"
       inputs:
         targetPath: $(System.DefaultWorkingDirectory)/tfplan
