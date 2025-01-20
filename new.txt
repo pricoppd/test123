@@ -1,3 +1,5 @@
+Remove-TypeData -TypeName "System.Security.AccessControl.ObjectSecurity"
+Import-Module Microsoft.PowerShell.Security -Force
 
 # Proxy Address
 $proxyAddress = "http://your-proxy-address:port"  # Replace with your proxy server's address
