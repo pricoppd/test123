@@ -1,52 +1,67 @@
-$organization = "<YourOrganization>"  # Replace with your Azure DevOps organization name
-$personalAccessToken = "<YourPAT>"    # Replace with your Azure DevOps Personal Access Token
+# Define your Azure DevOps organization and Personal Access Token
+$organization = "Contoso"  # Replace with your Azure DevOps organization name
+$personalAccessToken = "<YourPAT>"  # Replace with your Personal Access Token
 $apiVersion = "7.1-preview.4"
 
-# Function to Get Project Details Including EIM
-function Get-ProjectDetailsWithEIM {
-    param (
-        [string]$Organization,
-        [string]$PAT,
-        [string]$APIVersion
-    )
+# Encode organization for safe URL usage
+$encodedOrganization = [System.Uri]::EscapeUriString($organization)
 
-    # API URL to get all projects
-    $projectsUrl = "https://dev.azure.com/$Organization/_apis/projects?api-version=$APIVersion"
+# Construct URL to fetch all projects
+$projectsUrl = "https://dev.azure.com/$encodedOrganization/_apis/projects?api-version=$apiVersion"
 
-    # Get all projects
-    $projectsResponse = Invoke-RestMethod -Uri $projectsUrl -Method Get -Headers @{
-        Authorization = "Basic $([Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$PAT")))"
-    }
-
-    # Loop through each project to get details
-    foreach ($project in $projectsResponse.value) {
-        $projectId = $project.id
-        $projectName = $project.name
-
-        # Get detailed information for the project
-        $projectDetailsUrl = "https://dev.azure.com/$Organization/_apis/projects/$projectId?api-version=$APIVersion"
-        $projectDetails = Invoke-RestMethod -Uri $projectDetailsUrl -Method Get -Headers @{
-            Authorization = "Basic $([Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$PAT")))"
-        }
-
-        # Extract the description (EIM) if available
-        $projectDescription = $projectDetails.description
-        $EIM = if ($projectDescription) {
-            $projectDescription
-        } else {
-            "No EIM Value Available"
-        }
-
-        # Display project details
-        Write-Output "Project Name: $projectName"
-        Write-Output "Project ID: $projectId"
-        Write-Output "EIM: $EIM"
-        Write-Output "---------------------------"
-    }
+# Authorization Header
+$authHeader = @{
+    Authorization = "Basic $([Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$personalAccessToken")))"
 }
 
-# Call the function
-Get-ProjectDetailsWithEIM -Organization $organization -PAT $personalAccessToken -APIVersion $apiVersion
+# Try to Fetch All Projects
+try {
+    Write-Output "Fetching all projects for organization: $organization..."
+    $projectsResponse = Invoke-RestMethod -Uri $projectsUrl -Method Get -Headers $authHeader
+
+    # Check if there are any projects returned
+    if ($projectsResponse.value.Count -eq 0) {
+        Write-Output "No projects found in the organization."
+    } else {
+        Write-Output "Projects found: $($projectsResponse.value.Count)"
+        
+        # Loop through each project and fetch details
+        foreach ($project in $projectsResponse.value) {
+            $projectId = $project.id
+            $projectName = $project.name
+
+            # Construct URL to fetch project details
+            $projectDetailsUrl = "https://dev.azure.com/$encodedOrganization/_apis/projects/$projectId?api-version=$apiVersion"
+
+            try {
+                # Fetch detailed project information
+                $projectDetails = Invoke-RestMethod -Uri $projectDetailsUrl -Method Get -Headers $authHeader
+
+                # Extract EIM (Project Description)
+                $projectDescription = if ($projectDetails.description) {
+                    $projectDetails.description
+                } else {
+                    "No EIM Value Available"
+                }
+
+                # Output project details
+                Write-Output "Project Name: $projectName"
+                Write-Output "Project ID: $projectId"
+                Write-Output "EIM: $projectDescription"
+                Write-Output "---------------------------"
+            } catch {
+                # Handle errors fetching project details
+                Write-Output "Error fetching details for project: $projectName"
+                Write-Output "Error: $($_.Exception.Message)"
+            }
+        }
+    }
+} catch {
+    # Handle errors fetching all projects
+    Write-Output "Error fetching projects: $($_.Exception.Message)"
+    Write-Output "Detailed Error: $($_.Exception.InnerException)"
+}
+
 
 
 
