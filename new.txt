@@ -1,3 +1,50 @@
+# Encode the PAT for authorization
+$base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$PatToken"))
+
+# GET Service Connection ID
+$azureDevOpsServiceConnectionIdCheck = "$AzOrgURL/$AzProject/_apis/serviceendpoint/endpoints?endpointNames=$AzSCName&api-version=7.1-preview.1"
+try {
+    $outputSC = Invoke-RestMethod -Uri $azureDevOpsServiceConnectionIdCheck -Method GET -ContentType "application/json" -Headers @{Authorization = "Basic $base64AuthInfo"}
+} catch {
+    Write-Error "Failure getting service connection ID: $_"
+    return
+}
+
+# Loop through each project to share the service connection
+foreach ($AzSharewithProjectName in $AzSharewithProjectNames) {
+    # GET Target Project ID
+    $azureDevOpsProjectIDUrl = "$AzOrgURL/_apis/projects?api-version=7.1"
+    try {
+        $outputProjData = Invoke-RestMethod -Uri $azureDevOpsProjectIDUrl -Method GET -ContentType "application/json" -Headers @{Authorization = "Basic $base64AuthInfo"}
+        $outputProjID = ($outputProjData.value | Where-Object { $_.name -eq $AzSharewithProjectName }).id
+    } catch {
+        Write-Error "Failure getting project ID for project '$AzSharewithProjectName': $_"
+        continue
+    }
+
+    # Share Service Connection
+    $azureDevOpsServiceConnectionShareUrl = "$AzOrgURL/_apis/serviceendpoint/endpoints/$($outputSC.value[0].id)?api-version=7.1"
+    $jsonBody = @{
+        projectReference = @{
+            id   = $outputProjID
+            name = $AzSharewithProjectName
+        }
+        name = "$AzSCName-Managed"
+    } | ConvertTo-Json -Depth 2
+
+    try {
+        Invoke-RestMethod -Uri $azureDevOpsServiceConnectionShareUrl -Method PATCH -ContentType "application/json" -Body $jsonBody -Headers @{Authorization = "Basic $base64AuthInfo"}
+        Write-Host "Service connection shared successfully with project '$AzSharewithProjectName'"
+    } catch {
+        if ($_ -match "already exists") {
+            Write-Host "Service connection share configuration already exists for project '$AzSharewithProjectName'"
+        } else {
+            Write-Error "Failure sharing service connection with project '$AzSharewithProjectName': $_"
+        }
+    }
+}
+
+
 Remove-TypeData -TypeName "System.Security.AccessControl.ObjectSecurity"
 Import-Module Microsoft.PowerShell.Security -Force
 
