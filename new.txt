@@ -1,3 +1,128 @@
+- task: AzurePowerShell@5
+  displayName: 'Share Service Connection'
+  inputs:
+    azureSubscription: 'sandpit-01-vsts'
+    ScriptType: InlineScript
+    Inline: |
+      # Navigate to the scripts directory
+      cd /scripts
+
+      # Run Get-TableContents.ps1 to retrieve the table data
+      $output = ./Get-TableContents.ps1 -ResourceGroupName "sandpit-01-rg-dev-01" `
+                                         -StorageAccountName "sandpitsa" `
+                                         -TableName "demo" `
+                                         -TableOnly $true
+
+      # Validate if $output has data
+      if (-not $output) {
+          Write-Error "No data retrieved from Get-TableContents.ps1. Ensure the table exists and has valid data."
+          exit 1
+      }
+
+      # Validate if $output is iterable
+      if (-not ($output -is [System.Collections.IEnumerable])) {
+          Write-Error "Output is not iterable. Ensure the script returns an array of objects."
+          exit 1
+      }
+
+      # Debug: Log the structure of $output
+      Write-Host "DEBUG: Output from Get-TableContents.ps1:"
+      Write-Host ($output | ConvertTo-Json -Depth 3)
+
+      # Iterate through each row in the output
+      foreach ($row in $output) {
+          # Extract SPN, Project Names, and Project IDs
+          $spn = $row.spn
+          $projectNames = $row.project_name_to_share_with -split ","
+          $projectIds = $row.project_id_to_share_with -split ","
+
+          Write-Host "Processing Service Connection: $spn"
+
+          # Validate project names and IDs
+          if (-not $projectNames -or -not $projectIds) {
+              Write-Error "Missing project names or IDs for SPN: $spn"
+              continue
+          }
+
+          # Ensure project names and IDs match in length
+          if ($projectNames.Length -ne $projectIds.Length) {
+              Write-Error "Mismatch between project names and IDs for SPN: $spn"
+              continue
+          }
+
+          # Process each project for the current SPN
+          for ($i = 0; $i -lt $projectNames.Length; $i++) {
+              $projectName = $projectNames[$i]
+              $projectId = $projectIds[$i]
+
+              # Escape special characters for logging
+              Write-Host ("Sharing Service Connection {0} with Project {1} ({2})" -f $spn, $projectName, $projectId)
+
+              # Call Share-ServiceConnection.ps1
+              try {
+                  ./Share-ServiceConnection.ps1 -PatToken $(patToken) `
+                                                 -AzOrgURL "https://dev.azure.com/your-org" `
+                                                 -AzProject "Sandpit.DevTest" `
+                                                 -AzSCName $spn `
+                                                 -ProjectNameToShareWith $projectName `
+                                                 -ProjectIdToShareWith $projectId
+                  Write-Host "Successfully shared service connection $spn with Project $projectName"
+              } catch {
+                  Write-Error ("Failed to share service connection {0} with Project {1}. Error: {2}" -f $spn, $projectName, $_.Exception.Message)
+              }
+          }
+      }
+    azurePowerShellVersion: LatestVersion
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 param (
     [Parameter(Mandatory=$true)]
     [string]$PatToken, # Personal Access Token for Azure DevOps authentication
