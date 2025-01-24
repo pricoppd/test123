@@ -1,3 +1,44 @@
+# Attempt to update the service connection
+Write-Host "Authorizing project: ${ProjectIdToShareWith} for service connection: ${serviceConnectionId}"
+
+try {
+    $response = Invoke-RestMethod -Uri $serviceConnectionUpdateUrl -Method PATCH -ContentType "application/json" -Body $jsonBody -Headers @{
+        Authorization=("Basic {0}" -f $base64AuthInfo)
+    } -ErrorAction Stop
+    Write-Host "Successfully authorized project ${ProjectIdToShareWith} for service connection ${serviceConnectionId}"
+} catch {
+    Write-Error "Failed to authorize project ${ProjectIdToShareWith} for service connection ${serviceConnectionId}."
+    Write-Error "Response: $($_.Exception.Response | ConvertTo-Json -Depth 3)"
+    Write-Error "Error Details: $($_.Exception | ConvertTo-Json -Depth 3)"
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 param (
     [Parameter(Mandatory=$true)]
     [string]$PatToken, # Personal Access Token for Azure DevOps authentication
