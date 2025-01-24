@@ -1,3 +1,129 @@
+task: AzurePowerShell@5
+displayName: 'Share Service Connection'
+inputs:
+  azureSubscription: 'sandpit-01-vsts'
+  ScriptType: InlineScript
+  Inline: |
+    # Navigate to the scripts directory
+    cd /scripts
+
+    # Run Get-TableContents.ps1 to retrieve the data table
+    $output = ./Get-TableContents.ps1 -ResourceGroupName "sandpit-01-rg-dev-01" `
+                                       -StorageAccountName "sandpitsa" `
+                                       -TableName "demo" `
+                                       -TableOnly $true
+
+    # Process each record from the data table
+    $output | ForEach-Object {
+        # Extract information for each record
+        $spn = $_.spn
+        $projectNames = $_.project_name_to_share_with -split ","
+        $projectIds = $_.project_id_to_share_with -split ","
+
+        # Log the current SPN being processed
+        Write-Output "Processing SPN: $spn"
+
+        # Share service connection for each project
+        for ($i = 0; $i -lt $projectNames.Length; $i++) {
+            $projectName = $projectNames[$i]
+            $projectId = $projectIds[$i]
+
+            Write-Output "Sharing SPN $spn with project $projectName ($projectId)"
+            
+            ./Share-ServiceConnection.ps1 -PatToken $(patToken) `
+                                           -AzProject "Sandpit,DevTest" `
+                                           -AzSCName $spn `
+                                           -ProjectNameToShareWith $projectName `
+                                           -ProjectIdToShareWith $projectId
+        }
+    }
+  azurePowerShellVersion: LatestVersion
+
+
+param (
+    [Parameter(Mandatory=$true)]
+    [string]$PatToken, # Personal Access Token for authentication
+
+    [Parameter(Mandatory=$true)]
+    [string]$AzProject, # Project where the connection exists
+
+    [Parameter(Mandatory=$true)]
+    [string]$AzSCName, # Name of the service connection to be shared
+
+    [Parameter(Mandatory=$true)]
+    [string]$ProjectNameToShareWith, # Target project name
+
+    [Parameter(Mandatory=$true)]
+    [string]$ProjectIdToShareWith # Target project ID
+)
+
+# Function to configure authentication headers
+function Get-AuthHeader {
+    return @{
+        "Authorization" = "Bearer $PatToken"
+        "Content-Type" = "application/json"
+    }
+}
+
+# Log the input parameters
+Write-Output "Starting to share service connection: $AzSCName"
+Write-Output "From project: $AzProject"
+Write-Output "To project: $ProjectNameToShareWith ($ProjectIdToShareWith)"
+
+# Base URL for Azure DevOps REST API
+$AzureDevOpsUrl = "https://dev.azure.com/{YourOrganization}/_apis"
+
+# Step 1: Get the service connection ID in the source project
+$serviceConnectionUrl = "$AzureDevOpsUrl/projects/$AzProject/serviceendpoint"
+$response = Invoke-RestMethod -Uri $serviceConnectionUrl -Headers (Get-AuthHeader) -Method Get
+
+$serviceConnectionId = ($response.value | Where-Object { $_.name -eq $AzSCName }).id
+
+if (-not $serviceConnectionId) {
+    Write-Error "Service connection $AzSCName not found in project $AzProject"
+    exit 1
+}
+
+Write-Output "Found service connection ID: $serviceConnectionId"
+
+# Step 2: Share the service connection with the target project
+$shareUrl = "$AzureDevOpsUrl/projects/$AzProject/serviceendpoint/$serviceConnectionId/share"
+$shareBody = @{
+    targetProjects = @(
+        @{
+            id = $ProjectIdToShareWith
+            name = $ProjectNameToShareWith
+        }
+    )
+} | ConvertTo-Json -Depth 10
+
+$response = Invoke-RestMethod -Uri $shareUrl -Headers (Get-AuthHeader) -Method Post -Body $shareBody
+
+if ($response -ne $null -and $response.status -eq "Success") {
+    Write-Output "Successfully shared service connection $AzSCName with project $ProjectNameToShareWith ($ProjectIdToShareWith)"
+} else {
+    Write-Error "Failed to share service connection $AzSCName with project $ProjectNameToShareWith ($ProjectIdToShareWith)"
+    Write-Error "Response: $response"
+    exit 1
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 $jsonBody = @{
     projectReference = @{
         id = $projectId
