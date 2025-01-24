@@ -1,3 +1,13 @@
+$jsonBody = @{
+    projectReference = @{
+        id = $projectId
+        name = $projectName
+    }
+    name = "${AzSCName}-Managed"
+} | ConvertTo-Json -Depth 2 -Compress
+
+
+
 # Iterate over project names and IDs
 for ($i = 0; $i -lt $Projectnamestosharewith.Length; $i++) {
     $projectName = $Projectnamestosharewith[$i]
