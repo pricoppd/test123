@@ -1,3 +1,50 @@
+- task: AzurePowerShell@5
+  displayName: 'Share Service Connection'
+  inputs:
+    azureSubscription: 'sandpit-01-vsts'
+    ScriptType: InlineScript
+    Inline: |
+      # Navigate to the scripts directory
+      cd /scripts
+
+      # Run Get-TableContents.ps1 to retrieve the table data
+      $output = ./Get-TableContents.ps1 -ResourceGroupName "sandpit-01-rg-dev-01" `
+                                         -StorageAccountName "sandpitsa" `
+                                         -TableName "demo" `
+                                         -TableOnly $true
+
+      # Validate if $output has data
+      if (-not $output) {
+          Write-Error "No data retrieved from Get-TableContents.ps1. Ensure the table exists and has valid data."
+          exit 1
+      }
+
+      # Process each row in the output
+      $output | ForEach-Object {
+          # Extract SPN, Project Names, and Project IDs
+          $spn = $_.spn
+          $projectNames = $_.project_name_to_share_with -split ","
+          $projectIds = $_.project_id_to_share_with -split ","
+
+          Write-Host "Processing Service Connection: $spn"
+
+          # Iterate over projects and share the service connection for each project
+          for ($i = 0; $i -lt $projectNames.Length; $i++) {
+              $projectName = $projectNames[$i]
+              $projectId = $projectIds[$i]
+
+              Write-Host "Sharing Service Connection $spn with Project $projectName ($projectId)"
+
+              # Call Share-ServiceConnection.ps1
+              ./Share-ServiceConnection.ps1 -PatToken $(patToken) `
+                                             -AzOrgURL "https://dev.azure.com/your-org" `
+                                             -AzProject "Sandpit.DevTest" `
+                                             -AzSCName $spn `
+                                             -ProjectNameToShareWith $projectName `
+                                             -ProjectIdToShareWith $projectId
+          }
+      }
+    azurePowerShellVersion: LatestVersion
 
 
 
