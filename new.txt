@@ -1,3 +1,96 @@
+# Attempt to share the service connection
+Write-Host "Checking service connection sharing for: ${AzSCName} with project: ${ProjectNameToShareWith} (${ProjectIdToShareWith})"
+
+try {
+    # Check if Service Connection is already shared
+    Write-Host "DEBUG: Fetching details of the service connection."
+    $checkAuthorizedProjectsUrl = "$AzOrgURL/_apis/serviceendpoint/endpoints/$serviceConnectionId?api-version=7.1"
+    $serviceConnectionDetails = Invoke-RestMethod -Uri $checkAuthorizedProjectsUrl -Method GET -Headers @{
+        Authorization=("Basic {0}" -f $base64AuthInfo)
+    } -ErrorAction Stop
+
+    # Determine if the target project is already authorized
+    if ($serviceConnectionDetails.authorization.authorizedProjects.id -contains $ProjectIdToShareWith) {
+        Write-Host "Service connection ${AzSCName} is already shared with project ${ProjectNameToShareWith}. Skipping."
+        return
+    }
+
+    # If not already shared, proceed with sharing
+    Write-Host "Service connection ${AzSCName} is not shared with project ${ProjectNameToShareWith}. Attempting to share."
+
+    # Prepare POST request for creating the service connection sharing
+    $postUrl = "$AzOrgURL/$AzProject/_apis/serviceendpoint/endpoints/$serviceConnectionId/share?api-version=7.1-preview.1"
+    $postBody = @"
+    [
+        {
+            "projectReference": {
+                "id": "$ProjectIdToShareWith",
+                "name": "$ProjectNameToShareWith"
+            },
+            "name": "$AzSCName"
+        }
+    ]
+    "@
+
+    Write-Host "DEBUG: Sending POST request to create service connection sharing."
+    $response = Invoke-RestMethod -Uri $postUrl -Method POST -ContentType "application/json" -Body $postBody -Headers @{
+        Authorization=("Basic {0}" -f $base64AuthInfo)
+    } -ErrorAction Stop
+    Write-Host "Successfully shared service connection ${AzSCName} with project ${ProjectNameToShareWith}."
+} catch {
+    Write-Error "Failed to process service connection sharing for ${AzSCName} with project ${ProjectNameToShareWith}."
+    Write-Error "Response: $($_.Exception.Response | ConvertTo-Json -Depth 3)"
+    Write-Error "Error Details: $($_.Exception | ConvertTo-Json -Depth 3)"
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 param (
     [Parameter(Mandatory=$true)]
     [string]$PatToken, # Personal Access Token for Azure DevOps authentication
