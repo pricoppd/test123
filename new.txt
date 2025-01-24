@@ -114,6 +114,136 @@ try {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+param (
+    [Parameter(Mandatory=$true)]
+    [string]$PatToken, # Personal Access Token for Azure DevOps authentication
+
+    [Parameter(Mandatory=$true)]
+    [string]$AzOrgURL, # Organization URL (e.g., https://dev.azure.com/your-org/)
+
+    [Parameter(Mandatory=$true)]
+    [string]$AzProject, # Source project name where the service connection exists
+
+    [Parameter(Mandatory=$true)]
+    [string]$AzSCName, # Name of the service connection to be shared
+
+    [Parameter(Mandatory=$true)]
+    [string]$ProjectNameToShareWith, # Target project name
+
+    [Parameter(Mandatory=$true)]
+    [string]$ProjectIdToShareWith # Target project ID
+)
+
+# Encode PAT for Authorization Header
+$base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$PatToken"))
+
+# GET ServiceConnection ID
+$serviceConnectionEndpoint = "$AzOrgURL/$AzProject/_apis/serviceendpoint/endpoints?endpointNames=$AzSCName&api-version=7.1"
+try {
+    Write-Host "DEBUG: Fetching service connection ID from URL: $serviceConnectionEndpoint"
+    $OutputSC = Invoke-RestMethod -Uri $serviceConnectionEndpoint -Method GET -Headers @{
+        Authorization=("Basic {0}" -f $base64AuthInfo)
+    } -ErrorAction Stop
+} catch {
+    Write-Error "Failure getting service connection ID: $($_.Exception.Message)"
+    return
+}
+
+# Validate and Extract Service Connection ID
+if ($OutputSC.value -and $OutputSC.value.Count -gt 0) {
+    $serviceConnectionId = $OutputSC.value[0].id
+    Write-Host "DEBUG: Found Service Connection ID: ${serviceConnectionId}"
+} else {
+    Write-Error "No service connection found with name: ${AzSCName}"
+    return
+}
+
+# Prepare Service Connection Share URL
+$serviceConnectionShareUrl = "$AzOrgURL/_apis/serviceendpoint/endpoints/$serviceConnectionId/share?api-version=7.1-preview.1"
+Write-Host "DEBUG: Service Connection Share URL: ${serviceConnectionShareUrl}"
+
+# Create JSON Body for Sharing Service Connection
+$jsonBody = @"
+[
+    {
+        "projectReference": {
+            "id": "$ProjectIdToShareWith",
+            "name": "$ProjectNameToShareWith"
+        },
+        "name": "$AzSCName"
+    }
+]
+"@
+
+# Debug: Log JSON Body
+Write-Host "DEBUG: JSON Body for Sharing Service Connection:"
+Write-Host $jsonBody
+
+# Attempt to share the service connection
+Write-Host "Sharing service connection: ${AzSCName} with project: ${ProjectNameToShareWith} (${ProjectIdToShareWith})"
+
+try {
+    $response = Invoke-RestMethod -Uri $serviceConnectionShareUrl -Method POST -ContentType "application/json" -Body $jsonBody -Headers @{
+        Authorization=("Basic {0}" -f $base64AuthInfo)
+    } -ErrorAction Stop
+    Write-Host "Successfully shared service connection ${AzSCName} with project ${ProjectNameToShareWith}"
+} catch {
+    Write-Error "Failed to share service connection ${AzSCName} with project ${ProjectNameToShareWith}."
+    Write-Error "Response: $($_.Exception.Response | ConvertTo-Json -Depth 3)"
+    Write-Error "Error Details: $($_.Exception | ConvertTo-Json -Depth 3)"
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Attempt to update the service connection
 Write-Host "Authorizing project: ${ProjectIdToShareWith} for service connection: ${serviceConnectionId}"
 
