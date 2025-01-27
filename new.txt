@@ -1,3 +1,25 @@
+# Variables
+$resourceGroupName = "YourResourceGroupName"
+$storageAccountName = "YourStorageAccountName"
+$tableName = "YourTableName"
+$outputFile = "C:\Path\To\ExportedTable.csv"
+
+# Authenticate and set storage context
+Connect-AzAccount
+$storageAccountKey = (Get-AzStorageAccountKey -ResourceGroupName $resourceGroupName -Name $storageAccountName).Value[0]
+$storageContext = New-AzStorageContext -StorageAccountName $storageAccountName -StorageAccountKey $storageAccountKey
+
+# Get Table Data
+$tableData = Get-AzTableRow -TableName $tableName -Context $storageContext
+
+# Export to CSV
+$tableData | Export-Csv -Path $outputFile -NoTypeInformation -Encoding UTF8
+
+Write-Host "Table data exported to $outputFile"
+
+
+
+
 # Attempt to share the service connection
 Write-Host "Checking service connection sharing for: ${AzSCName} with project: ${ProjectNameToShareWith} (${ProjectIdToShareWith})"
 
