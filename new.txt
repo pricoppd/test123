@@ -1,4 +1,32 @@
 # Define variables
+$resourceGroupName = "<YourResourceGroup>"   # Replace with your Resource Group name
+$storageAccountName = "<YourStorageAccount>" # Replace with your Storage Account name
+$tableName = "<YourTableName>"               # Replace with your Table name
+$csvFilePath = "C:\Temp\TableData.csv"       # Replace with the desired output CSV file path
+
+# Authenticate to Azure
+Connect-AzAccount
+
+# Get the storage account context
+$storageContext = (Get-AzStorageAccount -ResourceGroupName $resourceGroupName -Name $storageAccountName).Context
+
+# Retrieve table rows
+$tableRows = Get-AzTableRow -Table $tableName -StorageContext $storageContext
+
+# Export the table rows to CSV
+$tableRows | Export-Csv -Path $csvFilePath -NoTypeInformation -Encoding UTF8
+
+Write-Output "Table data exported successfully to $csvFilePath"
+
+
+
+
+
+
+
+
+
+# Define variables
 $resourceGroupName = "<YourResourceGroup>"   # Replace with your resource group name
 $storageAccountName = "<YourStorageAccount>" # Replace with your storage account name
 $tableName = "<YourTableName>"               # Replace with your table name
