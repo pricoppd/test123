@@ -1,8 +1,20 @@
-$appId = "Your-SPN-Application-ID"
-$tenantId = "Your-Tenant-ID"
-$clientSecret = "Your-SPN-Client-Secret"
+# Define variables
+$resourceGroupName = "<YourResourceGroup>"   # Replace with your resource group name
+$storageAccountName = "<YourStorageAccount>" # Replace with your storage account name
+$tableName = "<YourTableName>"               # Replace with your table name
 
-Connect-AzAccount -ServicePrincipal -ApplicationId $appId -TenantId $tenantId -Credential (New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $appId, (ConvertTo-SecureString $clientSecret -AsPlainText -Force))
+# Get the storage account context
+$storageContext = (Get-AzStorageAccount -ResourceGroupName $resourceGroupName -Name $storageAccountName).Context
+
+# Query the table content
+$tableContent = Get-AzTableRow -TableName $tableName -Context $storageContext
+
+# Output the results
+$tableContent | ForEach-Object {
+    Write-Output "PartitionKey: $($_.PartitionKey), RowKey: $($_.RowKey)"
+    $_
+}
+
 
 
 
