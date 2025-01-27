@@ -1,3 +1,11 @@
+$appId = "Your-SPN-Application-ID"
+$tenantId = "Your-Tenant-ID"
+$clientSecret = "Your-SPN-Client-Secret"
+
+Connect-AzAccount -ServicePrincipal -ApplicationId $appId -TenantId $tenantId -Credential (New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $appId, (ConvertTo-SecureString $clientSecret -AsPlainText -Force))
+
+
+
 # Variables
 $resourceGroupName = "YourResourceGroupName"
 $storageAccountName = "YourStorageAccountName"
