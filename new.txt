@@ -1,3 +1,37 @@
+stages:
+  - stage: Deploy
+    jobs:
+      - job: CopyArtifact
+        pool:
+          vmImage: 'ubuntu-latest'
+
+        steps:
+          # Step 1: Download the artifact "tfoutput"
+          - task: DownloadPipelineArtifact@2
+            inputs:
+              artifact: 'tfoutput'  # Name of the artifact
+              path: '$(Pipeline.Workspace)/tfoutput'  # Destination folder
+
+          # Step 2: Copy the artifact into the existing "terraform" folder
+          - script: |
+              $SourcePath = "$(Pipeline.Workspace)/tfoutput/*"  # Path to files inside tfoutput
+              $DestinationPath = "$(Build.SourcesDirectory)/terraform"  # Path to existing terraform folder
+
+              # Ensure the destination folder exists
+              if (!(Test-Path $DestinationPath)) {
+                Write-Host "Creating destination folder: $DestinationPath"
+                New-Item -Path $DestinationPath -ItemType Directory
+              }
+
+              # Copy the contents of tfoutput into terraform
+              Copy-Item -Path $SourcePath -Destination $DestinationPath -Recurse -Force
+
+              Write-Host "tfoutput artifact copied into the existing terraform folder: $DestinationPath"
+            displayName: 'Copy tfoutput Artifact into terraform Folder'
+            shell: pwsh
+
+
+
 - script: |
     $FilePath = "$(Build.SourcesDirectory)/main.tfvars"
 
