@@ -1,3 +1,22 @@
+# Define file path
+$JsonFilePath = "C:\Path\To\output.json"  # Change this to your actual JSON file path
+
+# Read and parse JSON file
+$JsonContent = Get-Content $JsonFilePath | ConvertFrom-Json
+
+# Extract 'spn_names' values
+$SpnNames = $JsonContent.spn_names.value
+
+# Convert PowerShell array to Terraform format ["value1", "value2"]
+$SpnNamesTfList = "[" + ($SpnNames -join '","') + "]"
+
+# Output formatted value to Azure DevOps pipeline logs
+Write-Host "SPN_NAMES_TF_LIST=`"$SpnNamesTfList`""
+
+# Set as Azure DevOps pipeline variable
+Write-Host "##vso[task.setvariable variable=spnNamesTfList]$SpnNamesTfList"
+
+
 - script: |
     $tfOutput = terraform output -json | ConvertFrom-Json
     $spnNames = $tfOutput.spn_names.value
