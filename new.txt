@@ -1,3 +1,21 @@
+- script: |
+    $tfOutput = terraform output -json | ConvertFrom-Json
+    $spnNames = $tfOutput.spn_names.value
+
+    # Convert PowerShell array to Terraform format ["value1", "value2"]
+    $spnNamesTfList = "[" + ($spnNames -join '","') + "]"
+
+    # Output the formatted value to Azure DevOps pipeline logs
+    Write-Host "SPN_NAMES_TF_LIST=`"$spnNamesTfList`""
+
+    # Set as an Azure DevOps pipeline variable
+    Write-Host "##vso[task.setvariable variable=spnNamesTfList]$spnNamesTfList"
+  displayName: 'Extract Terraform Outputs Using PowerShell'
+  shell: pwsh
+
+
+
+
 stages:
   - stage: Terraform
     jobs:
