@@ -1,4 +1,20 @@
 - script: |
+    $FilePath = "$(Build.SourcesDirectory)/main.tfvars"
+
+    # Read file efficiently using StreamReader
+    $Reader = New-Object System.IO.StreamReader($FilePath)
+
+    while (($line = $Reader.ReadLine()) -ne $null) {
+        Write-Host "Line: $line"
+    }
+
+    $Reader.Close()
+  displayName: 'Read main.tfvars Efficiently'
+  shell: pwsh
+
+
+
+- script: |
     $FilePath = "$(Build.SourcesDirectory)/main.tfvars"  # File location
     $Content = [System.IO.File]::ReadAllText($FilePath)
 
