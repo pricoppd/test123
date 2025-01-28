@@ -1,3 +1,35 @@
+stages:
+  - stage: Terraform
+    jobs:
+      - job: ApplyTerraform
+        pool:
+          vmImage: 'ubuntu-latest'
+        steps:
+          - script: |
+              terraform init
+              terraform apply -auto-approve
+            displayName: 'Terraform Init & Apply'
+
+          - script: |
+              TF_OUTPUT=$(terraform output -json)
+              SPN_NAMES=$(echo $TF_OUTPUT | jq -c '.spn_names.value')
+
+              # Convert array to Terraform format ["value1", "value2"]
+              SPN_NAMES_TF_LIST=$(echo $SPN_NAMES | jq -c '. | map("\"" + . + "\"") | join(",")')
+              SPN_NAMES_TF_LIST="[$SPN_NAMES_TF_LIST]"
+
+              echo "##vso[task.setvariable variable=spnNamesTfList]$SPN_NAMES_TF_LIST"
+            displayName: 'Extract Terraform Outputs'
+            shell: bash
+
+          - script: |
+              terraform apply -auto-approve -var="spn_names=$(spnNamesTfList)"
+            displayName: 'Run Terraform with SPN List'
+
+
+
+
+
 # Define variables
 $resourceGroupName = "<YourResourceGroup>"   # Replace with your Resource Group name
 $storageAccountName = "<YourStorageAccount>" # Replace with your Storage Account name
