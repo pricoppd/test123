@@ -1,3 +1,15 @@
+- script: |
+    $FilePath = "$(Build.SourcesDirectory)/main.tfvars"  # File location
+    $Content = [System.IO.File]::ReadAllText($FilePath)
+
+    # Output content for debugging (optional)
+    Write-Host "TFVARS Content: `n$Content"
+  displayName: 'Read main.tfvars File'
+  shell: pwsh
+
+
+
+
 # Define file path
 $JsonFilePath = "C:\Path\To\output.json"  # Change this to your actual JSON file path
 
