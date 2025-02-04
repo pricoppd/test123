@@ -1,3 +1,63 @@
+# Define variables
+$orgURL = "https://dev.azure.com/YourOrganization"  # Replace with your Azure DevOps organization URL
+$AzSharewithProjectName = "YourProjectName"  # Replace with the target project name
+$serviceConnectionId = "YourServiceConnectionID"  # Replace with the service connection ID
+$personalAccessToken = "YourPAT"  # Replace with your Azure DevOps Personal Access Token
+
+# Construct the permissions API URL
+$azureDevOpsPermissionsUrl = "$orgURL/$AzSharewithProjectName/_apis/securitynamespaces/endpoint/$serviceConnectionId/permissions?api-version=7.1"
+
+# Construct the JSON body for setting permissions
+$jsonPermissionsBody = @"
+{
+    "roleName": "Reader",
+    "principalName": "Reader",
+    "principalType": "Group"
+}
+"@
+
+# Encode PAT for Basic Authentication
+$base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$personalAccessToken"))
+
+try {
+    # Make the API request to set permissions
+    $response = Invoke-RestMethod -Uri $azureDevOpsPermissionsUrl `
+        -Method POST `
+        -ContentType "application/json" `
+        -Body $jsonPermissionsBody `
+        -Headers @{Authorization=("Basic {0}" -f $base64AuthInfo)}
+
+    Write-Output "Successfully set Reader permissions on the shared service connection."
+} catch {
+    Write-Error "Failure setting Reader permissions on the shared service connection: $_"
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 stages:
   - stage: Deploy
     jobs:
