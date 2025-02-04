@@ -1,5 +1,71 @@
 # Define variables
 $orgURL = "https://dev.azure.com/YourOrganization"  # Replace with your Azure DevOps organization URL
+$AzSharewithProjectName = "YourProjectName"  # Project to share service connections with
+$personalAccessToken = "YourPAT"  # Replace with your Azure DevOps Personal Access Token
+
+# Construct the API URL to set permissions at the project level
+$azureDevOpsPermissionsUrl = "$orgURL/$AzSharewithProjectName/_apis/securitynamespaces/endpoint/permissions?api-version=7.1"
+
+# Construct the JSON body for setting permissions at the project level
+$jsonPermissionsBody = @"
+{
+    "roleName": "Reader",
+    "principalName": "Reader",
+    "principalType": "Group"
+}
+"@
+
+# Encode PAT for Basic Authentication
+$base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$personalAccessToken"))
+
+try {
+    # Make the API request to set permissions at the project level
+    Invoke-RestMethod -Uri $azureDevOpsPermissionsUrl `
+        -Method POST `
+        -ContentType "application/json" `
+        -Body $jsonPermissionsBody `
+        -Headers @{Authorization=("Basic {0}" -f $base64AuthInfo)}
+
+    Write-Output "Successfully granted Reader permissions to all service connections in project: $AzSharewithProjectName"
+} catch {
+    Write-Error "Failed to set Reader permissions at the project level: $_"
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Define variables
+$orgURL = "https://dev.azure.com/YourOrganization"  # Replace with your Azure DevOps organization URL
 $AzSharewithProjectName = "YourProjectName"  # Replace with the target project name
 $serviceConnectionId = "YourServiceConnectionID"  # Replace with the service connection ID
 $personalAccessToken = "YourPAT"  # Replace with your Azure DevOps Personal Access Token
