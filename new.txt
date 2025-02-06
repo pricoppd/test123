@@ -1,3 +1,51 @@
+
+# Define your Azure DevOps parameters
+$organization = "myOrganization"
+# If each shared connection is in a different project, you might need to map each resource to its target project.
+# For simplicity, we assume all shares are in one project.
+$project = "myProject"
+$pat = "YOUR_PERSONAL_ACCESS_TOKEN"  # Replace with your PAT
+$base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$pat"))
+$headers = @{ Authorization = "Basic $base64AuthInfo" }
+
+# Load the Terraform plan JSON
+$planJson = Get-Content -Raw -Path "plan.json" | ConvertFrom-Json
+
+# Iterate through resource changes
+foreach ($resourceChange in $planJson.resource_changes) {
+    # Check if this is a service connection and is being deleted
+    if ($resourceChange.type -eq "azuredevops_serviceendpoint" -and ($resourceChange.change.actions -contains "delete")) {
+        # Extract the service connection ID from the "before" state
+        $serviceConnectionId = $resourceChange.change.before.id
+        
+        # Optional: Add logging or additional logic to determine target projects if needed
+        Write-Output "Detected deletion of service connection with ID: $serviceConnectionId"
+
+        # Form the REST API URL (adjust as needed if the shared connection exists in multiple projects)
+        $url = "https://dev.azure.com/$organization/$project/_apis/serviceendpoint/endpoints/$serviceConnectionId?api-version=6.0-preview.4"
+        
+        Write-Output "Calling DELETE on $url"
+        try {
+            $response = Invoke-RestMethod -Uri $url -Method DELETE -Headers $headers
+            Write-Output "Successfully unshared service connection $serviceConnectionId."
+        }
+        catch {
+            Write-Error "Error unsharing service connection $serviceConnectionId: $_"
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
 # Define variables
 $orgURL = "https://dev.azure.com/YourOrganization"  # Replace with your Azure DevOps organization URL
 $AzSharewithProjectName = "YourProjectName"  # Project to share service connections with
