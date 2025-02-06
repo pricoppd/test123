@@ -1,3 +1,69 @@
+# Define your Azure DevOps organization and PAT
+$organization = "myOrganization"
+$pat = "YOUR_PERSONAL_ACCESS_TOKEN"  # Securely store this in production
+$base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$pat"))
+$headers = @{ Authorization = "Basic $base64AuthInfo" }
+
+# Load Terraform plan JSON
+$planJson = Get-Content -Raw -Path "plan.json" | ConvertFrom-Json
+
+# Load mapping file that correlates Terraform resource addresses with target projects
+$mapping = Get-Content -Raw -Path "mapping.json" | ConvertFrom-Json
+
+# Iterate through each resource change in the plan
+foreach ($resourceChange in $planJson.resource_changes) {
+    # Check if this is an Azure DevOps service connection and is being deleted
+    if ($resourceChange.type -eq "azuredevops_serviceendpoint" -and ($resourceChange.change.actions -contains "delete")) {
+        $resourceAddress = $resourceChange.address
+        $serviceConnectionId = $resourceChange.change.before.id
+
+        # Lookup the target project from the mapping using the resource address
+        $mappingItem = $mapping | Where-Object { $_.resource_address -eq $resourceAddress }
+        if (-not $mappingItem) {
+            Write-Warning "No mapping found for resource address: $resourceAddress. Skipping unshare."
+            continue
+        }
+        $targetProject = $mappingItem.target_project
+
+        Write-Output "Detected deletion of service connection '$serviceConnectionId' (Resource: $resourceAddress) from project '$targetProject'."
+
+        # Construct the REST API URL for the target project
+        $url = "https://dev.azure.com/$organization/$targetProject/_apis/serviceendpoint/endpoints/$serviceConnectionId?api-version=6.0-preview.4"
+        Write-Output "Calling DELETE on $url"
+
+        try {
+            $response = Invoke-RestMethod -Uri $url -Method DELETE -Headers $headers
+            Write-Output "Successfully unshared service connection $serviceConnectionId from project $targetProject."
+        }
+        catch {
+            Write-Error "Error unsharing service connection $serviceConnectionId from project $targetProject: $_"
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Define your Azure DevOps parameters
 $organization = "myOrganization"
