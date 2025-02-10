@@ -1,3 +1,21 @@
+# Authentication
+$PatToken = "your_personal_access_token"
+$Base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$PatToken"))
+$Headers = @{ Authorization = "Basic $Base64AuthInfo" }
+
+# Define the API URL (delete a service connection)
+$Organization = "your_org"
+$ProjectId = "your_project_id"
+$ServiceConnectionId = "your_service_connection_id"
+$ApiVersion = "7.1-preview.1"
+
+$Url = "https://dev.azure.com/$Organization/_apis/serviceendpoint/endpoints/$ServiceConnectionId?api-version=$ApiVersion&project=$ProjectId"
+
+# Send DELETE request
+Invoke-RestMethod -Uri $Url -Method Delete -Headers $Headers
+#################################################################################################################################################
+
+
 param (
     [string]$PatToken,
     [string]$AzOrgURL
