@@ -1,3 +1,183 @@
+param (
+    [string]$PatToken,
+    [string]$AzOrgURL
+)
+
+# Encode PAT token for authentication
+$Base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$PatToken"))
+$Headers = @{
+    Authorization = "Basic $Base64AuthInfo"
+    Accept = "application/json"
+}
+
+# Define the path to the Terraform plan output file
+$PlanFilePath = "plan.txt"
+
+# Ensure the file exists before proceeding
+if (!(Test-Path $PlanFilePath)) {
+    Write-Output "Error: Terraform plan file '$PlanFilePath' not found."
+    exit 1
+}
+
+# Read the plan file content
+$PlanContent = Get-Content -Path $PlanFilePath -Raw
+
+# Define regex patterns to extract service connection IDs (SPN)
+$DestroyPattern = "(?<=azurerm_serviceendpoint_azurem.service_connection_spn).*?destroyed"
+$SpnPattern = "azurerm_serviceendpoint_azurem.service_connection_spn\[""([^""]+)""\]"
+
+# Find service connections marked for deletion
+$DestroyMatches = [regex]::Matches($PlanContent, $DestroyPattern, [System.Text.RegularExpressions.RegexOptions]::Singleline)
+
+# Ensure at least one service connection is found
+if ($DestroyMatches.Count -eq 0) {
+    Write-Output "No service connections marked for deletion found."
+    exit 0
+}
+
+# Extract the SPN (Service Connection ID)
+$SpnList = @()
+foreach ($Match in $DestroyMatches) {
+    $SpnExtracted = [regex]::Match($Match.Value, $SpnPattern).Groups[1].Value
+    if ($SpnExtracted) {
+        $SpnList += $SpnExtracted
+    }
+}
+
+if ($SpnList.Count -eq 0) {
+    Write-Output "Error: No valid service connection IDs (SPN) extracted."
+    exit 1
+}
+
+Write-Output "Found service connections for deletion: $($SpnList -join ', ')"
+
+# Extract project IDs from the Changes to Outputs section
+$ProjectIds = @()
+$Lines = $PlanContent -split "`n"
+$Capture = $false
+
+foreach ($Line in $Lines) {
+    if ($Line -match 'project_ids_to_share_with\s*=\s*\[') {
+        $Capture = $true
+    }
+
+    if ($Capture -and $Line -match '"([^"]+)"') {
+        $ProjectIdLine = $Line.Trim()
+        $ProjectId = $ProjectIdLine -replace '.*"([^"]+)".*', '$1'
+        $ProjectIds += $ProjectId
+    }
+
+    if ($Capture -and $Line -match '\]') {
+        $Capture = $false
+    }
+}
+
+# Ensure project IDs were extracted
+if ($ProjectIds.Count -eq 0) {
+    Write-Output "Error: No valid project IDs found in the Terraform plan."
+    exit 1
+}
+
+Write-Output "Identified project IDs: $($ProjectIds -join ', ')"
+
+# Remove the shared service connection from each project
+foreach ($Spn in $SpnList) {
+    foreach ($ProjectId in $ProjectIds) {
+        # Construct the Azure DevOps API URL
+        $AzureDevOpsServiceConnectionShareUrl = "$AzOrgURL/_apis/serviceendpoint/endpoints/$Spn?api-version=7.1-preview.1&project=$ProjectId"
+
+        Write-Output "Attempting to delete service connection $Spn from project $ProjectId..."
+
+        try {
+            $Response = Invoke-RestMethod -Uri $AzureDevOpsServiceConnectionShareUrl -Method Delete -Headers $Headers
+            Write-Output "✔ Successfully removed service connection $Spn from project $ProjectId"
+        }
+        catch {
+            Write-Output "❌ Failed to remove service connection $Spn from project $ProjectId"
+            Write-Output "Error Details: $_"
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+############################################################################################################################################################################################
 # Define your Azure DevOps organization and PAT
 $organization = "myOrganization"
 $pat = "YOUR_PERSONAL_ACCESS_TOKEN"  # Securely store this in production
