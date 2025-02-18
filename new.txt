@@ -1,3 +1,14 @@
+$organization = "YourOrganization"
+
+# Run the Azure DevOps CLI command and convert the JSON output
+$groups = az devops security group list --organization "https://dev.azure.com/$organization" --output json | ConvertFrom-Json
+
+# Filter for the Endpoint Administrators group
+$endpointAdminsGroup = $groups.graphGroups | Where-Object { $_.displayName -eq "Endpoint Administrators" }
+
+# Display the group descriptor (identity id)
+$endpointAdminsGroup.descriptor
+
 
 az devops security group list --organization https://dev.azure.com/YourOrganization --output json | jq '.graphGroups[] | select(.displayName=="Endpoint Administrators")'
 
