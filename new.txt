@@ -1,3 +1,7 @@
+
+az devops security group list --organization https://dev.azure.com/YourOrganization --output json | jq '.graphGroups[] | select(.displayName=="Endpoint Administrators")'
+
+
 curl -u :<YourPAT> \
   "https://vssps.dev.azure.com/<YourOrganization>/_apis/graph/groups?api-version=6.0-preview.1"
 
