@@ -1,3 +1,35 @@
+# Variables
+$organization = "YourOrganization"
+$pat = "YourPAT"
+
+# Encode PAT for the Authorization header (username is blank)
+$base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$pat"))
+$headers = @{
+    Authorization = "Basic $base64AuthInfo"
+}
+
+# Define the API URL to list all groups
+$url = "https://vssps.dev.azure.com/$organization/_apis/graph/groups?api-version=6.0-preview.1"
+
+# Retrieve groups
+$response = Invoke-RestMethod -Uri $url -Headers $headers -Method Get
+
+# Filter for the Endpoint Administrators group
+$endpointAdminsGroup = $response.value | Where-Object { $_.displayName -eq "Endpoint Administrators" }
+
+# Output the group descriptor (identity id)
+$endpointAdminsGroup.descriptor
+
+
+
+
+
+
+
+
+
+
+
 # Authentication
 $PatToken = "your_personal_access_token"
 $Base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$PatToken"))
