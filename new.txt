@@ -1,3 +1,8 @@
+
+
+$Base64AuthInfo = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes(":$($PAT)"))
+$Base64AuthInfo = [Convert]::ToBase64String([byte[]][char[]](":$($PAT)"))
+
 locals {
   project_name_to_share_with = distinct(flatten([
     for spn in values(var.project_spn) : [
