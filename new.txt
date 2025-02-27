@@ -1,3 +1,5 @@
+$Bytes = [System.Text.Encoding]::UTF8.GetBytes(":$($PAT)")
+$Base64AuthInfo = [Convert]::ToBase64String($Bytes)
 
 
 $Base64AuthInfo = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes(":$($PAT)"))
