@@ -1,4 +1,18 @@
 
+data "azuredevops_project" "example" {
+  for_each = { for idx, name in local.project_name_to_share_with : idx => name if length(name) > 0 }
+
+  name = each.value
+}
+
+data "azuredevops_serviceendpoint_azurerm" "serviceendpoint" {
+  for_each = toset(local.spn_names)
+
+  project_id          = data.azuredevops_project.example[each.value].id
+  service_endpoint_name = each.value
+}
+
+
 output "service_endpoint_ids" {
   value = { for key, endpoint in data.azuredevops_serviceendpoint_azurerm.serviceendpoint :
     key => endpoint.id
