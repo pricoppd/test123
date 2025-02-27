@@ -1,4 +1,143 @@
-It seems there might be a mismatch in the variable type declaration for `admin_ssh_public_key`. The `default` value you provided is a string, but the `type` is declared as `string`. If you intend to have multiple SSH public keys (which seems likely based on the previous discussion), you should declare it as a list of strings. Here's the corrected variable declaration:
+<# 
+.SYNOPSIS
+    Adds a security group with Reader role to a Shared Service Connection in a different Azure DevOps project.
+    
+.DESCRIPTION
+    This script authenticates to Azure DevOps, retrieves a shared service connection from a specified project,
+    and assigns the 'Reader' role to a given Azure DevOps security group.
+
+.PARAMETER OrganizationUrl
+    The URL of the Azure DevOps organization (e.g., https://dev.azure.com/MyOrg)
+
+.PARAMETER TargetProject
+    The name of the project where the Shared Service Connection is located.
+
+.PARAMETER ServiceConnectionName
+    The name of the Shared Service Connection to modify.
+
+.PARAMETER SecurityGroupName
+    The name of the Azure DevOps security group to assign the Reader role.
+
+.PARAMETER PAT
+    The Personal Access Token (PAT) with the necessary permissions.
+
+.NOTES
+    Required Permissions:
+    - The PAT must have at least "Read & manage service connections" and "Manage user permissions" permissions.
+
+.EXAMPLE
+    Add-ReaderRoleToServiceConnection -OrganizationUrl "https://dev.azure.com/MyOrg" `
+                                      -TargetProject "SharedProject" `
+                                      -ServiceConnectionName "MyServiceConnection" `
+                                      -SecurityGroupName "MyReaderGroup" `
+                                      -PAT "yourPAT"
+#>
+
+param (
+    [string]$OrganizationUrl,
+    [string]$TargetProject,
+    [string]$ServiceConnectionName,
+    [string]$SecurityGroupName,
+    [string]$PAT
+)
+
+# Convert PAT to Base64 for authentication
+$Base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$($PAT)"))
+
+# Get the Service Connection ID
+$ServiceConnectionsUrl = "$OrganizationUrl/$TargetProject/_apis/serviceendpoint/endpoints?api-version=7.1-preview.4"
+$ServiceConnections = Invoke-RestMethod -Uri $ServiceConnectionsUrl -Method Get -Headers @{
+    Authorization = "Basic $Base64AuthInfo"
+} -ErrorAction Stop
+
+$ServiceConnection = $ServiceConnections.value | Where-Object { $_.name -eq $ServiceConnectionName }
+
+if (-not $ServiceConnection) {
+    Write-Host "ERROR: Service connection '$ServiceConnectionName' not found in project '$TargetProject'." -ForegroundColor Red
+    exit 1
+}
+
+$ServiceConnectionId = $ServiceConnection.id
+Write-Host "Found Service Connection ID: $ServiceConnectionId"
+
+# Get the Security Group ID
+$SecurityGroupsUrl = "$OrganizationUrl/_apis/graph/groups?api-version=7.1-preview.1"
+$SecurityGroups = Invoke-RestMethod -Uri $SecurityGroupsUrl -Method Get -Headers @{
+    Authorization = "Basic $Base64AuthInfo"
+} -ErrorAction Stop
+
+$SecurityGroup = $SecurityGroups.value | Where-Object { $_.principalName -eq $SecurityGroupName }
+
+if (-not $SecurityGroup) {
+    Write-Host "ERROR: Security group '$SecurityGroupName' not found." -ForegroundColor Red
+    exit 1
+}
+
+$SecurityGroupId = $SecurityGroup.descriptor
+Write-Host "Found Security Group ID: $SecurityGroupId"
+
+# Assign Reader role to the Security Group on the Service Connection
+$SecurityRoleUrl = "$OrganizationUrl/_apis/securitynamespaces/c2f6d6a1-4a77-4e9c-8a5a-7c9f6ff6fc9b/permissions/$ServiceConnectionId?api-version=7.1-preview.1"
+
+$RoleAssignment = @{
+    principal = $SecurityGroupId
+    namespaceId = "c2f6d6a1-4a77-4e9c-8a5a-7c9f6ff6fc9b"
+    token = $ServiceConnectionId
+    allow = 1  # Reader Role
+    deny = 0
+}
+
+$Response = Invoke-RestMethod -Uri $SecurityRoleUrl -Method Post -Headers @{
+    Authorization = "Basic $Base64AuthInfo"
+    "Content-Type" = "application/json"
+} -Body ($RoleAssignment | ConvertTo-Json -Depth 10) -ErrorAction Stop
+
+if ($Response) {
+    Write-Host "Successfully added Reader role to '$SecurityGroupName' for Service Connection '$ServiceConnectionName'." -ForegroundColor Green
+} else {
+    Write-Host "Failed to assign role. Check logs for details." -ForegroundColor Red
+    exit 1
+}
+Add-ReaderRoleToServiceConnection -OrganizationUrl "https://dev.azure.com/MyOrg" `
+                                  -TargetProject "SharedProject" `
+                                  -ServiceConnectionName "MyServiceConnection" `
+                                  -SecurityGroupName "MyReaderGroup" `
+                                  -PAT "yourPAT"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+########################################It seems there might be a mismatch in the variable type declaration for `admin_ssh_public_key`. The `default` value you provided is a string, but the `type` is declared as `string`. If you intend to have multiple SSH public keys (which seems likely based on the previous discussion), you should declare it as a list of strings. Here's the corrected variable declaration:
 
 ```hcl
 variable "admin_ssh_public_key" {
