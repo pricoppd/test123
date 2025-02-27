@@ -1,3 +1,10 @@
+
+output "service_endpoint_ids" {
+  value = { for key, endpoint in data.azuredevops_serviceendpoint_azurerm.serviceendpoint :
+    key => endpoint.id
+  }
+}
+
 locals {
   project_name_to_share_with = distinct(flatten([
     for spn in values(var.project_spn) : [
