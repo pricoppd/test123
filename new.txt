@@ -1,4 +1,77 @@
 locals {
+  project_name_to_share_with = distinct(flatten([
+    for spn in values(var.project_spn) : [
+      for name in split(",", join(",", spn.project_name_to_share_with)) : trim(name, " ")
+    ]
+  ]))
+
+  spn_names = distinct(flatten([
+    for spn in values(var.project_spn) : spn.spn
+  ]))
+
+  project_map = { for k, v in data.azuredevops_project.example : v.name => v.id }
+}
+
+data "azuredevops_serviceendpoint_azurerm" "serviceendpoint" {
+  for_each = var.project_spn
+
+  project_id            = lookup(local.project_map, each.key, null)
+  service_endpoint_name = each.value.spn
+}
+
+output "service_endpoint_ids" {
+  value = { for key, endpoint in data.azuredevops_serviceendpoint_azurerm.serviceendpoint :
+    key => endpoint.id
+  }
+}
+
+unique_permissions = distinct({ for perm in flatten([
+  for project_key, project in data.azuredevops_project.example : [
+    for spn_key, spn in var.project_spn : {
+      project_id         = project.id
+      serviceendpoint_id = try(data.azuredevops_serviceendpoint_azurerm.serviceendpoint[spn.spn].id, null)
+      principal          = data.azuredevops_group.EndpointAdministrators[project_key].id
+      permissions = {
+        Use               = "allow"
+        Administer        = "deny"
+        Create            = "deny"
+        ViewAuthorization = "allow"
+        ViewEndpoint      = "allow"
+      }
+    }
+  ]
+]) : "${perm.project_id}-${perm.serviceendpoint_id}" => perm if perm.serviceendpoint_id != null })
+
+resource "azuredevops_serviceendpoint_permissions" "permissions" {
+  for_each = local.unique_permissions
+
+  project_id        = each.value.project_id
+  serviceendpoint_id = each.value.serviceendpoint_id
+  principal         = each.value.principal
+  permissions       = each.value.permissions
+  replace           = false
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+locals {
   project_map = { for k, v in data.azuredevops_project.example : v.name => v.id }
 }
 data "azuredevops_serviceendpoint_azurerm" "serviceendpoint" {
