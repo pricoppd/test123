@@ -1,3 +1,46 @@
+resource "azuredevops_serviceendpoint_permissions" "permissions" {
+  for_each = { 
+    for spn_key, spn in var.project_spn : spn_key => spn 
+    if length(spn.project_id_to_share_with) > 0  # ✅ Only apply permissions where service connection is shared
+  }
+
+  project_id         = data.azuredevops_group.EndpointAdministrators[each.key].project_id
+  serviceendpoint_id = azuredevops_serviceendpoint_azurerm.service_connection_spn[each.key].id
+  principal         = data.azuredevops_group.EndpointAdministrators[each.key].id
+  permissions       = {
+    Use               = "allow"
+    Administer        = "deny"
+    Create            = "deny"
+    ViewAuthorization = "allow"
+    ViewEndpoint      = "allow"
+  }
+  replace           = false
+}
+
+Verify the Permissions Assignment
+hcl
+Copy
+output "permissions_debug" {
+  value = { for key, perm in azuredevops_serviceendpoint_permissions.permissions :
+    key => {
+      project_id         = perm.project_id
+      serviceendpoint_id = perm.serviceendpoint_id
+      principal          = perm.principal
+    }
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
 data "azuredevops_group" "EndpointAdministrators" {
   for_each = { 
     for spn_key, spn in var.project_spn : spn_key => spn 
