@@ -1,4 +1,50 @@
-curl -H "Authorization: Bearer YOUR_PERSONAL_ACCESS_TOKEN" \
+locals {
+  project_name_to_share_with = distinct(flatten([
+    for spn in values(var.project_spn) : [
+      for name in split(",", join(",", spn.project_name_to_share_with)) : trim(name, " ")
+    ]
+  ]))
+
+  spn_names = distinct(flatten([
+    for spn in values(var.project_spn) : spn.spn
+  ]))
+
+  unique_permissions = { for perm in flatten([
+    for project_key, project in data.azuredevops_project.example : [
+      for spn_key, spn in var.project_spn : {
+        project_id         = project.id
+        serviceendpoint_id = try(data.azuredevops_serviceendpoint_azurerm.serviceendpoint[spn.spn].id, null)
+        principal          = data.azuredevops_group.EndpointAdministrators[project_key].id
+        permissions = {
+          Use               = "allow"
+          Administer        = "deny"
+          Create            = "deny"
+          ViewAuthorization = "allow"
+          ViewEndpoint      = "allow"
+        }
+      }
+    ]
+  ]) : "${perm.project_id}-${perm.serviceendpoint_id}" => perm if perm.serviceendpoint_id != null }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+l -H "Authorization: Bearer YOUR_PERSONAL_ACCESS_TOKEN" \
      -H "Accept: application/json" \
      "https://dev.azure.com/YOUR_ORG/_apis/serviceendpoint/endpoints?api-version=7.1-preview.4"
 
