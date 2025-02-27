@@ -1,3 +1,8 @@
+curl -H "Authorization: Bearer YOUR_PERSONAL_ACCESS_TOKEN" \
+     -H "Accept: application/json" \
+     "https://dev.azure.com/YOUR_ORG/_apis/serviceendpoint/endpoints?api-version=7.1-preview.4"
+
+
 # Fetch existing service endpoint ID instead of dynamically creating new ones
 data "azuredevops_serviceendpoint" "existing_service_connection_spn" {
   for_each = var.project_spn
