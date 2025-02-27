@@ -1,4 +1,49 @@
 locals {
+  # Ensure only unique service endpoint permissions are created
+  unique_permissions = { for perm in flatten([
+    for project_key, project in data.azuredevops_project.example : [
+      for spn_key, spn in var.project_spn : {
+        project_id         = project.id
+        serviceendpoint_id = azuredevops_serviceendpoint_azurerm.service_connection_spn[spn_key].id
+        principal          = data.azuredevops_group.EndpointAdministrators[project_key].id
+        permissions = {
+          Use               = "allow"
+          Administer        = "deny"
+          Create            = "deny"
+          ViewAuthorization = "allow"
+          ViewEndpoint      = "allow"
+        }
+      }
+    ]
+  ]) : "${perm.project_id}-${perm.serviceendpoint_id}" => perm }
+}
+
+resource "azuredevops_serviceendpoint_permissions" "permissions" {
+  for_each = local.unique_permissions
+
+  project_id        = each.value.project_id
+  serviceendpoint_id = each.value.serviceendpoint_id
+  principal         = each.value.principal
+  permissions       = each.value.permissions
+  replace           = false
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+locals {
   permissions = distinct(flatten([
     for project_key, project in data.azuredevops_project.example : [
       for spn_key, spn in var.project_spn : {
