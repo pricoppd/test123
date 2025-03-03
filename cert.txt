@@ -1,0 +1,88 @@
+Below are three sample goals you can use in a development plan format. Each goal includes suggested entries for the key fields typically required: Action Item, Development Actions, Measures of Success, Support Required, and Purpose of Goal.
+
+---
+
+## 1. Renew Expired Microsoft Certifications
+
+**Action Item**  
+Renew my expired Microsoft certifications (e.g., Azure Administrator, Azure Solutions Architect) to ensure up-to-date knowledge of Microsoft’s cloud solutions.
+
+**Development Actions to be Taken**  
+- Identify which certifications have expired and the specific renewal requirements for each.  
+- Gather updated study materials and enroll in relevant Microsoft Learn modules or official training courses.  
+- Set aside time weekly for review and practice exams.  
+- Schedule and complete the certification renewal exams before the designated deadlines.
+
+**Measures of Success**  
+- Passing scores on each relevant renewal exam.  
+- Updated digital badges or official documentation from Microsoft.  
+- Demonstrated ability to apply newly refreshed knowledge to current projects.
+
+**Support Required**  
+- Manager approval for any required training budgets.  
+- Access to internal or external training resources (e.g., Microsoft Learn, official practice tests).  
+- Study leave or flexible scheduling for exam preparation if needed.
+
+**Purpose of Goal**  
+Achieving in Current Role (ensuring my skillset remains current and aligned with organizational needs).
+
+---
+
+## 2. Earn the Terraform Certification
+
+**Action Item**  
+Obtain the Terraform certification to deepen Infrastructure as Code (IaC) expertise and enhance deployment automation skills.
+
+**Development Actions to be Taken**  
+- Research the official HashiCorp Terraform Certification path and prerequisites.  
+- Enroll in an online course or workshop focusing on Terraform best practices.  
+- Practice building and deploying infrastructure using Terraform in a lab or sandbox environment.  
+- Register and sit for the certification exam within the next six months.
+
+**Measures of Success**  
+- Successful completion of the HashiCorp Terraform Associate exam.  
+- Creation of reusable Terraform modules that streamline deployments in our environment.  
+- Positive feedback from peers or managers on infrastructure improvements made using Terraform.
+
+**Support Required**  
+- Budget for certification exam fees.  
+- Access to sandbox or test environments for hands-on practice.  
+- Potential mentorship or guidance from internal IaC subject-matter experts.
+
+**Purpose of Goal**  
+Career Growth (expanding capabilities in DevOps and cloud automation).
+
+---
+
+## 3. Complete Azure AI Training
+
+**Action Item**  
+Undertake specialized training in Azure AI to gain foundational knowledge in AI/ML services and integrate them into business solutions.
+
+**Development Actions to be Taken**  
+- Identify and enroll in Microsoft’s Azure AI Fundamentals or relevant advanced AI training courses.  
+- Participate in hands-on labs or projects to apply AI and ML concepts in a real-world context.  
+- Collaborate with team members on pilot projects that leverage Azure Cognitive Services, Azure Machine Learning, or other AI offerings.
+
+**Measures of Success**  
+- Completion of formal Azure AI training modules and any relevant assessments.  
+- Demonstrable prototypes or proof-of-concept solutions using Azure AI services.  
+- Ability to propose and implement AI-driven features or improvements in current workflows.
+
+**Support Required**  
+- Manager or team lead assistance in identifying suitable pilot AI projects.  
+- Training budget for online courses or lab environments.  
+- Access to Azure resources for development and testing.
+
+**Purpose of Goal**  
+Achieving in Current Role (enhancing technical capabilities to support innovation and advanced analytics).
+
+---
+
+### Visibility
+Set each goal’s visibility to **Self & Managers** (or according to your organization’s guidelines).
+
+### Selecting Skills
+If your system requires selecting skills, consider choosing from areas such as **Cloud Computing**, **DevOps**, **Automation**, **AI/ML**, **Azure Services**, and **Infrastructure as Code**. Pick the 3–5 that most closely align with each goal.
+
+These examples can be adapted to fit the specific character limits and requirements of your development planning tool.
