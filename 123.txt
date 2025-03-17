@@ -1,3 +1,26 @@
+resource "null_resource" "create_service_connection" {
+  for_each = var.service_connection_params
+
+  provisioner "local-exec" {
+    environment = {
+      ORGANIZATION            = each.value.organization
+      PROJECT                 = each.value.project
+      AZURE_DEVOPS_PAT        = each.value.azure_devops_pat
+      SERVICE_CONNECTION_NAME = each.value.service_connection_name
+      SERVICE_PRINCIPAL_ID    = each.value.service_principal_id
+      SERVICE_PRINCIPAL_KEY   = each.value.service_principal_key
+      TENANT_ID               = each.value.tenant_id
+      SERVER_URL              = each.value.server_url
+    }
+
+    # The script will read from environment variables instead of CLI arguments
+    command = "powershell -ExecutionPolicy Bypass -File ./Create-PowerPlatformServiceConnection.ps1"
+  }
+}
+
+
+
+
 Create-PowerPlatformServiceConnection.ps1
 
 [CmdletBinding()]
