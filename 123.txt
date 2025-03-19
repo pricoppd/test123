@@ -1,3 +1,14 @@
+ORKFLOWS-DE
+C:\Users\f43f34f\script.ps1: ("$id":"1","innerException":null,"message":"Unable to find service connection type 'powerplatform' using authentication scheme
+'ServicePrincipal".","typeName":"Microsoft.VisualStudio.Services.ServiceEndpoints.WebAp1.ServiceEndpointException,
+Microsoft.VisualStudio.Services.ServiceEndpoints.webApi","typeKey":"ServiceEndpointException", "errorCode":0,"eventId":3000)
+At line:1 char:1
+.\script.ps1 -Project "vcvc" -ServiceConnectionName "-mul...
+CategoryInfo
+: Not Specified: (:) [write-Error], writeErrorException
+FullyQualifiedErrorId : Microsoft.PowerShe11.commands.writeErrorException,script.ps1
+
+
 resource "null_resource" "create_service_connection" {
   for_each = var.service_connection_params
 
