@@ -1,244 +1,141 @@
-Param(
-    [string]$OrganizationName,      # e.g. "myorg"
-    [string]$ProjectNameOrId,       # e.g. "MyProject" or GUID
-    [string]$ServiceConnectionName, # e.g. "My-PowerPlatform-Connection"
-    [string]$TenantId,             # e.g. "11111111-1111-1111-1111-111111111111"
-    [string]$ClientId,             # e.g. "00000000-0000-0000-0000-000000000000"
-    [string]$ClientSecret,         # e.g. "xxxxx"
-    [string]$ServerUrl,            # e.g. "https://contoso.crm.dynamics.com"
-    [string]$AzureDevOpsPAT        # Personal Access Token for Azure DevOps
-)
-
-Write-Host "Creating a Power Platform service connection with the following parameters:"
-Write-Host "OrganizationName      : $OrganizationName"
-Write-Host "ProjectNameOrId       : $ProjectNameOrId"
-Write-Host "ServiceConnectionName : $ServiceConnectionName"
-Write-Host "TenantId              : $TenantId"
-Write-Host "ClientId              : $ClientId"
-Write-Host "ClientSecret          : [HIDDEN]"
-Write-Host "ServerUrl             : $ServerUrl"
-Write-Host "AzureDevOpsPAT        : [HIDDEN]"
-
-# Set the environment variable so tools like az devops might pick it up, if needed.
-$env:AZURE_DEVOPS_EXT_PAT = $AzureDevOpsPAT
-
-# Construct the request body for a Power Platform service connection
-$body = @{
-    name = $ServiceConnectionName
-    type = "PowerPlatform"
-    url  = $ServerUrl
-    authorization = @{
-        parameters = @{
-            ApplicationId = $ClientId
-            TenantId      = $TenantId
-            ClientSecret  = $ClientSecret
-            ServerUrl     = $ServerUrl
-        }
-        scheme = "ServicePrincipal"
-    }
-    data = @{
-        # Optional: You can add "EnvironmentId" here if you want to bind to a specific environment, e.g.:
-        # "EnvironmentId" = "22222222-2222-2222-2222-222222222222"
-    }
-    # Link this service connection to a project. Remove this block if you want an org-level (library) connection.
-    serviceEndpointProjectReferences = @(
-        @{
-            projectReference = @{
-                id   = $ProjectNameOrId
-                name = $ProjectNameOrId
-            }
-            name        = $ServiceConnectionName
-            description = "Service connection for Power Platform"
-        }
-    )
+variable "powerplatform_service_connections" {
+  type = list(object({
+    name           = string
+    environment_id = string
+    server_url     = string
+  }))
+  default = []
 }
 
-$json = $body | ConvertTo-Json -Depth 10
-
-Write-Host "`n--- JSON body for debugging ---"
-Write-Host $json
-Write-Host "--- End of JSON body ---`n"
-
-# Prepare headers for the REST call
-$headers = @{
-    "Content-Type"  = "application/json"
-    "Authorization" = "Bearer $AzureDevOpsPAT"
-}
-
-# Construct the endpoint URL
-# For project-scoped connections:
-$endpointUrl = "https://dev.azure.com/$($OrganizationName)/$($ProjectNameOrId)/_apis/serviceendpoint/endpoints?api-version=7.0-preview.4"
-
-# If creating at the organization level (library), you'd use:
-# $endpointUrl = "https://dev.azure.com/$($OrganizationName)/_apis/serviceendpoint/endpoints?api-version=7.0-preview.4"
-
-Write-Host "POST -> $endpointUrl"
-
-# Make the REST call to create the service connection
-$response = Invoke-RestMethod -Uri $endpointUrl -Method POST -Body $json -ContentType "application/json" -Headers $headers
-
-Write-Host "`n--- Response ---"
-Write-Host ($response | ConvertTo-Json -Depth 10)
-Write-Host "--- End of Response ---`n"
-
-Write-Host "`nService connection '$ServiceConnectionName' created successfully in project '$ProjectNameOrId'."
-
-
-
-resource "null_resource" "create_service_connection" {
-  for_each = var.service_connection_params
+resource "null_resource" "create_power_platform_service_connections" {
+  for_each = { for c in var.powerplatform_service_connections : c.name => c }
 
   provisioner "local-exec" {
-    environment = {
-      ORGANIZATION            = each.value.organization
-      PROJECT                 = each.value.project
-      AZURE_DEVOPS_PAT        = each.value.azure_devops_pat
-      SERVICE_CONNECTION_NAME = each.value.service_connection_name
-      SERVICE_PRINCIPAL_ID    = each.value.service_principal_id
-      SERVICE_PRINCIPAL_KEY   = each.value.service_principal_key
-      TENANT_ID               = each.value.tenant_id
-      SERVER_URL              = each.value.server_url
-    }
+    interpreter = ["/usr/bin/env", "pwsh", "-Command"]
 
-    # The script will read from environment variables instead of CLI arguments
-    command = "powershell -ExecutionPolicy Bypass -File ./Create-PowerPlatformServiceConnection.ps1"
+    command = templatefile("${path.module}/create_service_connection.ps1.tpl", {
+      tenant_id               = var.tenant_id
+      client_id               = var.client_id
+      client_secret           = var.client_secret
+      organization_name       = var.organization_name
+      project_name            = var.project_name
+      service_connection_name = each.value.name
+      environment_id          = each.value.environment_id
+      server_url              = each.value.server_url
+    })
   }
 }
+powerplatform_service_connections = [
+  {
+    name           = "Connection1"
+    environment_id = "env-guid-1"
+    server_url     = "https://org1.crm.dynamics.com"
+  },
+  {
+    name           = "Connection2"
+    environment_id = "env-guid-2"
+    server_url     = "https://org2.crm.dynamics.com"
+  }
+]
 
-
-
-
-Create-PowerPlatformServiceConnection.ps1
-
-[CmdletBinding()]
+@"
+pwsh -NoProfile -NonInteractive -Command '
 param(
-    [Parameter(Mandatory = $true)]
-    [string]$Organization,
-
-    [Parameter(Mandatory = $true)]
-    [string]$Project,
-
-    [Parameter(Mandatory = $true)]
-    [string]$PAT,
-
-    [Parameter(Mandatory = $true)]
-    [string]$ServiceConnectionName,
-
-    [Parameter(Mandatory = $true)]
-    [string]$ServicePrincipalId,
-
-    [Parameter(Mandatory = $true)]
-    [string]$ServicePrincipalKey,
-
-    [Parameter(Mandatory = $true)]
-    [string]$TenantId,
-
-    [Parameter(Mandatory = $false)]
-    [string]$ServerUrl = "https://api.powerplatform.com"
+  [Parameter(Mandatory=$true)][string]$TenantId,
+  [Parameter(Mandatory=$true)][string]$ClientId,
+  [Parameter(Mandatory=$true)][string]$ClientSecret,
+  [Parameter(Mandatory=$true)][string]$OrgName,
+  [Parameter(Mandatory=$true)][string]$ProjectName,
+  [Parameter(Mandatory=$true)][string]$SvcConnName,
+  [Parameter(Mandatory=$true)][string]$PowerEnvId,
+  [Parameter(Mandatory=$true)][string]$ServerUrl
 )
-
-# Encode the PAT for Basic auth (username can be empty)
-$base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$PAT"))
-
-# Construct the service endpoint payload
-$serviceEndpoint = @{
-    name = $ServiceConnectionName
-    type = "powerplatform"
-    url  = $ServerUrl
-    authorization = @{
-        scheme = "ServicePrincipal"
-        parameters = @{
-            authenticationType   = "spnKey"
-            serviceprincipalid   = $ServicePrincipalId
-            serviceprincipalkey  = $ServicePrincipalKey
-            tenantid             = $TenantId
-        }
-    }
-    data = @{}
-}
-
-# Convert payload to JSON
-$jsonBody = $serviceEndpoint | ConvertTo-Json -Depth 10
-
-# Azure DevOps REST API endpoint
-$apiUrl = "https://dev.azure.com/$Organization/$Project/_apis/serviceendpoint/endpoints?api-version=6.0-preview.4"
 
 try {
-    $response = Invoke-RestMethod -Uri $apiUrl `
-                                  -Method Post `
-                                  -Headers @{ Authorization = "Basic $base64AuthInfo" } `
-                                  -ContentType "application/json" `
-                                  -Body $jsonBody
+  Write-Host "Authenticating to Azure DevOps with client credentials..."
+  # 1) Request a token from AAD for the DevOps resource
+  #    resource = 499b84ac-1321-427f-aa17-267ca6975798
+  $tokenUrl = "https://login.microsoftonline.com/$TenantId/oauth2/token"
+  $body = @{
+    grant_type    = "client_credentials"
+    client_id     = $ClientId
+    client_secret = $ClientSecret
+    resource      = "499b84ac-1321-427f-aa17-267ca6975798"
+  }
+  $tokenResponse = Invoke-RestMethod -Method Post -Uri $tokenUrl -Body $body
+  $accessToken = $tokenResponse.access_token
 
-    Write-Host "Service connection '$ServiceConnectionName' created successfully in project '$Project' of organization '$Organization'." -ForegroundColor Green
+  $headers = @{
+    "Authorization" = "Bearer $accessToken"
+    "Accept"        = "application/json"
+  }
+
+  # 2) Check if service connection already exists
+  $checkUrl = "https://dev.azure.com/$OrgName/$ProjectName/_apis/serviceendpoint/endpoints?api-version=7.0-preview.2"
+  $existing = (Invoke-RestMethod -Uri $checkUrl -Method GET -Headers $headers).value | Where-Object { $_.name -eq $SvcConnName }
+  if ($existing) {
+    Write-Host "Service connection '$SvcConnName' already exists. Skipping creation."
+    return
+  }
+
+  # 3) Build the request body for a Power Platform service connection
+  $bodyObject = @{
+    name = $SvcConnName
+    type = "powerPlatform"
+    url  = $ServerUrl
+    authorization = @{
+      scheme     = "ServicePrincipal"
+      parameters = @{
+        TenantId     = $TenantId
+        ClientId     = $ClientId
+        ClientSecret = $ClientSecret
+      }
+    }
+    data = @{
+      EnvironmentId   = $PowerEnvId
+      EnvironmentType = "Production"
+      ServerUrl       = $ServerUrl
+    }
+    description = "Service Connection for Power Platform (via AAD client credentials)"
+  }
+  $jsonBody = $bodyObject | ConvertTo-Json -Depth 10
+
+  # 4) Create the new service connection
+  $createUrl = "https://dev.azure.com/$OrgName/$ProjectName/_apis/serviceendpoint/endpoints?api-version=7.0-preview.2"
+  $response = Invoke-RestMethod -Uri $createUrl -Method POST -Headers $headers -ContentType "application/json" -Body $jsonBody
+
+  Write-Host "Service connection '$SvcConnName' created successfully."
 }
 catch {
-    Write-Host "Error creating service connection '$ServiceConnectionName':" -ForegroundColor Red
-    Write-Error $_
+  Write-Error "Error: $($_.Exception.Message)"
+  exit 1
 }
+' -TenantId '${tenant_id}' `
+  -ClientId '${client_id}' `
+  -ClientSecret '${client_secret}' `
+  -OrgName '${organization_name}' `
+  -ProjectName '${project_name}' `
+  -SvcConnName '${service_connection_name}' `
+  -PowerEnvId '${environment_id}' `
+  -ServerUrl '${server_url}'
+"@
 
 
-main.tf
-
-terraform {
-  required_version = ">= 1.0.0"
-}
-
-variable "service_connection_params" {
-  type = map(object({
-    organization            = string
-    project                 = string
-    azure_devops_pat        = string
-    service_connection_name = string
-    service_principal_id    = string
-    service_principal_key   = string
-    tenant_id               = string
-    server_url              = optional(string, "https://api.powerplatform.com")
-  }))
-  description = "Map of parameters for each Power Platform service connection"
-}
-
-resource "null_resource" "create_service_connection" {
-  # for_each will create one resource per entry in the map
-  for_each = var.service_connection_params
-
-  provisioner "local-exec" {
-    command = <<-EOT
-      powershell -ExecutionPolicy Bypass -File ./Create-PowerPlatformServiceConnection.ps1 `
-        -Organization "${each.value.organization}" `
-        -Project "${each.value.project}" `
-        -PAT "${each.value.azure_devops_pat}" `
-        -ServiceConnectionName "${each.value.service_connection_name}" `
-        -ServicePrincipalId "${each.value.service_principal_id}" `
-        -ServicePrincipalKey "${each.value.service_principal_key}" `
-        -TenantId "${each.value.tenant_id}" `
-        -ServerUrl "${each.value.server_url}"
-    EOT
-  }
-}
 
 
-tfvars
 
-service_connection_params = {
-  "connection1" = {
-    organization            = "YourOrg1"
-    project                 = "YourProject1"
-    azure_devops_pat        = "yourPAT1"
-    service_connection_name = "PowerPlatformConnection1"
-    service_principal_id    = "00000000-0000-0000-0000-000000000001"
-    service_principal_key   = "superSecretKey1"
-    tenant_id               = "11111111-1111-1111-1111-111111111111"
-    server_url              = "https://org1.crm.dynamics.com"
-  },
-  "connection2" = {
-    organization            = "YourOrg2"
-    project                 = "YourProject2"
-    azure_devops_pat        = "yourPAT2"
-    service_connection_name = "PowerPlatformConnection2"
-    service_principal_id    = "00000000-0000-0000-0000-000000000002"
-    service_principal_key   = "superSecretKey2"
-    tenant_id               = "22222222-2222-2222-2222-222222222222"
-    server_url              = "https://org2.crm.dynamics.com"
-  }
-}
+
+
+
+@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+
+
+tenant_id               = "00000000-0000-0000-0000-000000000000"
+client_id               = "11111111-1111-1111-1111-111111111111"
+client_secret           = "MYCLIENTSECRET"
+organization_name       = "myorg"
+project_name            = "MyProject"
+service_connection_name = "PowerPlatformAADServiceConn"
+environment_id          = "ENV_GUID"
+server_url              = "https://myorg.crm.dynamics.com"
