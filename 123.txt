@@ -1,5 +1,12 @@
-
-tenant_id               = "00000000-0000-0000-0000-000000000000"
+variable "powerplatform_service_connections" {
+  type = list(object({
+    name           = string
+    environment_id = string
+    server_url     = string
+  }))
+  default = []
+}
+##################################tenant_id               = "00000000-0000-0000-0000-000000000000"
 client_id               = "11111111-1111-1111-1111-111111111111"
 client_secret           = "MYCLIENTSECRET"
 organization_name       = "myorg"
