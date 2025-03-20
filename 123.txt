@@ -1,3 +1,14 @@
+
+tenant_id               = "00000000-0000-0000-0000-000000000000"
+client_id               = "11111111-1111-1111-1111-111111111111"
+client_secret           = "MYCLIENTSECRET"
+organization_name       = "myorg"
+project_name            = "MyProject"
+service_connection_name = "PowerPlatformAADServiceConn"
+environment_id          = "ENV_GUID"
+server_url              = "https://myorg.crm.dynamics.com"
+
+####################################
 create_service_connection.ps1.tpl
 #########################################################
 
