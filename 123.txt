@@ -1,3 +1,48 @@
+
+#########################################################
+
+variable "tenant_id" {
+  type        = string
+  description = "Azure AD tenant ID"
+}
+
+variable "client_id" {
+  type        = string
+  description = "Azure AD client ID (service principal)"
+}
+
+variable "client_secret" {
+  type        = string
+  sensitive   = true
+  description = "Service principal secret"
+}
+
+variable "organization_name" {
+  type        = string
+  description = "Azure DevOps organization name (e.g. 'myorg' if your DevOps URL is https://dev.azure.com/myorg)"
+}
+
+variable "project_name" {
+  type        = string
+  description = "Azure DevOps project name"
+}
+
+variable "service_connection_name" {
+  type        = string
+  description = "Name of the service connection to create"
+}
+
+variable "environment_id" {
+  type        = string
+  description = "Power Platform environment ID"
+}
+
+variable "server_url" {
+  type        = string
+  description = "Power Platform server URL (e.g. https://myorg.crm.dynamics.com)"
+}
+
+######################################################
 variable "powerplatform_service_connections" {
   type = list(object({
     name           = string
