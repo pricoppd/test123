@@ -1,3 +1,84 @@
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "~> 3.0"
+    }
+  }
+}
+
+provider "azurerm" {
+  features {}
+}
+
+# Resource Group
+resource "azurerm_resource_group" "rg" {
+  name     = "rg-umi-eventgrid"
+  location = "East US"
+}
+
+# User Assigned Managed Identity (UMI)
+resource "azurerm_user_assigned_identity" "umi" {
+  name                = "umi-example"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+}
+
+# Service Bus Namespace
+resource "azurerm_servicebus_namespace" "sbns" {
+  name                = "sbnsumiexample"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  sku                 = "Standard"
+}
+
+# Service Bus Queue
+resource "azurerm_servicebus_queue" "queue" {
+  name                = "queueumi"
+  resource_group_name = azurerm_resource_group.rg.name
+  namespace_name      = azurerm_servicebus_namespace.sbns.name
+}
+
+# Role Assignment: Grant the UMI the Service Bus Data Sender role on the namespace
+resource "azurerm_role_assignment" "umi_sb_data_sender" {
+  scope                = azurerm_servicebus_namespace.sbns.id
+  role_definition_name = "Azure Service Bus Data Sender"
+  principal_id         = azurerm_user_assigned_identity.umi.principal_id
+}
+
+# Event Grid Topic (to publish events)
+resource "azurerm_eventgrid_topic" "eg_topic" {
+  name                = "egtopicumi"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+}
+
+# Event Grid Event Subscription using UMI for authentication
+resource "azurerm_eventgrid_event_subscription" "eg_subscription" {
+  name  = "egs-usiqueue"
+  scope = azurerm_eventgrid_topic.eg_topic.id
+
+  destination {
+    endpoint_type = "ServiceBusQueue"
+    resource_id   = azurerm_servicebus_queue.queue.id
+  }
+
+  # This block configures the subscription to use the UMI for AAD token–based auth
+  delivery_identity {
+    user_assigned_identity_id = azurerm_user_assigned_identity.umi.id
+  }
+
+  # Optional filtering configuration; adjust as needed
+  filter {
+    is_subject_case_sensitive = false
+  }
+
+  event_delivery_schema = "EventGridSchema"
+}
+
+
+
+
 variable "powerplatform_service_connections" {
   type = list(object({
     name           = string
