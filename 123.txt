@@ -1,3 +1,90 @@
+
+# Retrieve required environment variables (set these in your Function App Application Settings)
+$organization = $env:DEVOPS_ORGANIZATION    # e.g., "myorg"
+$pat = $env:DEVOPS_PAT                      # Your Personal Access Token
+
+# Validate environment variables are set
+if (-not $organization -or -not $pat) {
+    Write-Error "DEVOPS_ORGANIZATION and DEVOPS_PAT must be set in application settings."
+    exit 1
+}
+
+# Prepare the authentication header for Azure DevOps REST API
+$base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$pat"))
+$authHeader = @{ Authorization = "Basic $base64AuthInfo" }
+
+# Define the base API version and URL 
+$apiVersion = "6.0"
+$projectsApiUrl = "https://dev.azure.com/$organization/_apis/projects?api-version=$apiVersion"
+
+try {
+    # Retrieve all projects in the organization
+    $projectsResponse = Invoke-RestMethod -Uri $projectsApiUrl -Method Get -Headers $authHeader
+    $projects = $projectsResponse.value
+    Write-Output "Retrieved $($projects.Count) projects from organization '$organization'."
+}
+catch {
+    Write-Error "Error retrieving projects: $_"
+    exit 1
+}
+
+# Loop through each project to get successful build runs and their logs
+foreach ($project in $projects) {
+    $projectName = $project.name
+    Write-Output "Processing project: $projectName"
+
+    # URL to get builds for the project.
+    # The filters:
+    #   statusFilter=completed ensures only finished builds are returned.
+    #   resultFilter=succeeded ensures only succeeded runs are returned.
+    $buildsApiUrl = "https://dev.azure.com/$organization/$projectName/_apis/build/builds?statusFilter=completed&resultFilter=succeeded&api-version=$apiVersion"
+    
+    try {
+        $buildsResponse = Invoke-RestMethod -Uri $buildsApiUrl -Method Get -Headers $authHeader
+        $builds = $buildsResponse.value
+        Write-Output "  Found $($builds.Count) successful build(s) in project '$projectName'."
+    }
+    catch {
+        Write-Error "Error retrieving builds for project '$projectName': $_"
+        continue
+    }
+
+    # Process each successful build
+    foreach ($build in $builds) {
+        $buildId = $build.id
+        Write-Output "  Retrieving logs for Build ID: $buildId"
+
+        # URL to get logs (list of log files) for the build
+        $logsApiUrl = "https://dev.azure.com/$organization/$projectName/_apis/build/builds/$buildId/logs?api-version=$apiVersion"
+        
+        try {
+            $logsResponse = Invoke-RestMethod -Uri $logsApiUrl -Method Get -Headers $authHeader
+        }
+        catch {
+            Write-Error "    Error retrieving logs for Build ID $buildId in project '$projectName': $_"
+            continue
+        }
+        
+        # Loop through each log item (each log file may represent one step or task)
+        foreach ($logItem in $logsResponse.value) {
+            $logId = $logItem.id
+            # Retrieve the content of the log
+            $logContentUrl = "https://dev.azure.com/$organization/$projectName/_apis/build/builds/$buildId/logs/$logId?api-version=$apiVersion"
+            
+            try {
+                $logContent = Invoke-RestMethod -Uri $logContentUrl -Method Get -Headers $authHeader
+                Write-Output "    --- Log for Build $buildId (Log ID: $logId) ---"
+                Write-Output $logContent
+                Write-Output "    --- End Log ---`n"
+            }
+            catch {
+                Write-Error "    Error retrieving content for log ID $logId for Build ID $buildId: $_"
+            }
+        }
+    }
+}
+
+##############################################################################
 terraform {
   required_providers {
     azurerm = {
