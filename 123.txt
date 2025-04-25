@@ -1,18 +1,11 @@
 
 <#
 .SYNOPSIS
-  Classify Azure DevOps pipelines (YAML & classic) as Prod vs Non-Prod.
-
-.DESCRIPTION
-  - Requires Azure CLI + azure-devops extension.
-  - Authenticates via 'az login' or a service principal.
-  - Looks for "prod" in path/variables/tags/env names.
+  Classify Azure DevOps pipelines (YAML & classic) as Prod vs Non-Prod,
+  catching variants like production/Production/prd/pr, nonprod/non-prod/np.
 
 .PARAMETER OrgUrl
   Your Azure DevOps org URL, e.g. https://dev.azure.com/YourOrg
-
-.EXAMPLE
-  .\Classify-Pipelines.ps1 -OrgUrl https://dev.azure.com/YourOrg
 #>
 
 param(
@@ -21,7 +14,7 @@ param(
 )
 
 # ────────────────────────────────────────────────────────────────────────────────
-# Prerequisites
+# Prerequisites:
 #   az extension add --name azure-devops
 #   az login
 # ────────────────────────────────────────────────────────────────────────────────
@@ -29,25 +22,31 @@ param(
 # point CLI at your org
 az devops configure --defaults organization=$OrgUrl > $null
 
-# fetch all project names
-$projects = az devops project list `
-  --query "value[].name" -o tsv
+# regexes for matching
+$prodRegex    = '(?i)\b(?:production|prod|prd|pr)\b'
+$nonProdRegex = '(?i)\b(?:non[-]?prod|np)\b'
 
 # output CSV header
 "Project,Type,ID,Name,Prod?,Marker"
 
+# get all projects
+$projects = az devops project list --query "value[].name" -o tsv
+
 foreach ($proj in $projects) {
+
   # — 1) YAML pipelines —
-  $yamlList = az pipelines list --project $proj --query "value" -o json | ConvertFrom-Json
+  $yamlList = az pipelines list --project $proj -o json | ConvertFrom-Json
   foreach ($pipe in $yamlList) {
     $id    = $pipe.id
     $name  = $pipe.name
-    # fetch to get configuration.path
-    $det   = az pipelines show --project $proj --id $id | ConvertFrom-Json
+    $det   = az pipelines show --project $proj --id $id -o json | ConvertFrom-Json
     $path  = $det.configuration.path
-    $isProd= if ($path -match '(?i)prod') { 'Prod' } else { 'Non-Prod' }
-    $marker= $path
-    "$proj,YAML,$id,`"$name`",$isProd,`"$marker`""
+
+    if    ($path   -match $prodRegex)    { $label = 'Prod' }
+    elseif($path   -match $nonProdRegex) { $label = 'Non-Prod' }
+    else                                   { $label = 'Non-Prod' }
+
+    "$proj,YAML,$id,`"$name`",$label,`"$path`""
   }
 
   # — 2) Classic Build definitions —
@@ -57,14 +56,20 @@ foreach ($proj in $projects) {
     $name   = $bd.name
     $folder = $bd.path
     $envVar = if ($bd.variables.Environment) { $bd.variables.Environment.value } else { '' }
-    $tags   = if ($bd.tags) { ($bd.tags -join ';') } else { '' }
+    $tags   = if ($bd.tags) { $bd.tags -join ';' } else { '' }
     $marker = ($folder, $envVar, $tags | Where-Object { $_ }) -join ';'
-    $isProd = if (
-      ($folder -match '(?i)prod') -or 
-      ($envVar  -match '(?i)prod') -or 
-      ($tags    -match '(?i)prod')
-    ) { 'Prod' } else { 'Non-Prod' }
-    "$proj,Build,$id,`"$name`",$isProd,`"$marker`""
+
+    if    ($folder -match $prodRegex -or $envVar -match $prodRegex -or $tags -match $prodRegex) {
+      $label = 'Prod'
+    }
+    elseif($folder -match $nonProdRegex -or $envVar -match $nonProdRegex -or $tags -match $nonProdRegex) {
+      $label = 'Non-Prod'
+    }
+    else {
+      $label = 'Non-Prod'
+    }
+
+    "$proj,Build,$id,`"$name`",$label,`"$marker`""
   }
 
   # — 3) Classic Release definitions —
@@ -74,10 +79,15 @@ foreach ($proj in $projects) {
     $name    = $rd.name
     $envNames= $rd.environments | ForEach-Object { $_.name }
     $marker  = $envNames -join ';'
-    $isProd  = if ($envNames -match '(?i)prod') { 'Prod' } else { 'Non-Prod' }
-    "$proj,Release,$id,`"$name`",$isProd,`"$marker`""
+    
+    if    ($marker -match $prodRegex)    { $label = 'Prod' }
+    elseif($marker -match $nonProdRegex) { $label = 'Non-Prod' }
+    else                                   { $label = 'Non-Prod' }
+
+    "$proj,Release,$id,`"$name`",$label,`"$marker`""
   }
 }
+
 
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
