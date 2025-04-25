@@ -1,4 +1,88 @@
 
+<#
+.SYNOPSIS
+  Classify Azure DevOps pipelines (YAML & classic) as Prod vs Non-Prod.
+
+.DESCRIPTION
+  - Requires Azure CLI + azure-devops extension.
+  - Authenticates via 'az login' or a service principal.
+  - Looks for "prod" in path/variables/tags/env names.
+
+.PARAMETER OrgUrl
+  Your Azure DevOps org URL, e.g. https://dev.azure.com/YourOrg
+
+.EXAMPLE
+  .\Classify-Pipelines.ps1 -OrgUrl https://dev.azure.com/YourOrg
+#>
+
+param(
+  [Parameter(Mandatory)]
+  [string] $OrgUrl
+)
+
+# ────────────────────────────────────────────────────────────────────────────────
+# Prerequisites
+#   az extension add --name azure-devops
+#   az login
+# ────────────────────────────────────────────────────────────────────────────────
+
+# point CLI at your org
+az devops configure --defaults organization=$OrgUrl > $null
+
+# fetch all project names
+$projects = az devops project list `
+  --query "value[].name" -o tsv
+
+# output CSV header
+"Project,Type,ID,Name,Prod?,Marker"
+
+foreach ($proj in $projects) {
+  # — 1) YAML pipelines —
+  $yamlList = az pipelines list --project $proj --query "value" -o json | ConvertFrom-Json
+  foreach ($pipe in $yamlList) {
+    $id    = $pipe.id
+    $name  = $pipe.name
+    # fetch to get configuration.path
+    $det   = az pipelines show --project $proj --id $id | ConvertFrom-Json
+    $path  = $det.configuration.path
+    $isProd= if ($path -match '(?i)prod') { 'Prod' } else { 'Non-Prod' }
+    $marker= $path
+    "$proj,YAML,$id,`"$name`",$isProd,`"$marker`""
+  }
+
+  # — 2) Classic Build definitions —
+  $builds = az pipelines build definition list --project $proj -o json | ConvertFrom-Json
+  foreach ($bd in $builds) {
+    $id     = $bd.id
+    $name   = $bd.name
+    $folder = $bd.path
+    $envVar = if ($bd.variables.Environment) { $bd.variables.Environment.value } else { '' }
+    $tags   = if ($bd.tags) { ($bd.tags -join ';') } else { '' }
+    $marker = ($folder, $envVar, $tags | Where-Object { $_ }) -join ';'
+    $isProd = if (
+      ($folder -match '(?i)prod') -or 
+      ($envVar  -match '(?i)prod') -or 
+      ($tags    -match '(?i)prod')
+    ) { 'Prod' } else { 'Non-Prod' }
+    "$proj,Build,$id,`"$name`",$isProd,`"$marker`""
+  }
+
+  # — 3) Classic Release definitions —
+  $releases = az pipelines release definition list --project $proj -o json | ConvertFrom-Json
+  foreach ($rd in $releases) {
+    $id      = $rd.id
+    $name    = $rd.name
+    $envNames= $rd.environments | ForEach-Object { $_.name }
+    $marker  = $envNames -join ';'
+    $isProd  = if ($envNames -match '(?i)prod') { 'Prod' } else { 'Non-Prod' }
+    "$proj,Release,$id,`"$name`",$isProd,`"$marker`""
+  }
+}
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+
 # Retrieve required environment variables (set these in your Function App Application Settings)
 $organization = $env:DEVOPS_ORGANIZATION    # e.g., "myorg"
 $pat = $env:DEVOPS_PAT                      # Your Personal Access Token
