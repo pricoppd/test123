@@ -1,4 +1,104 @@
+############################################################################################################
+# Requires: PowerShell 7+, Install-Module powershell-yaml
+param(
+    [Parameter(Mandatory)][string]$Organization,   # e.g. "https://dev.azure.com/contoso"
+    [Parameter(Mandatory)][string]$Project,        # e.g. "MyProject"
+    [Parameter(Mandatory)][int]   $DefinitionId,   # pipeline ID
+    [Parameter(Mandatory)][string]$PAT             # Personal Access Token
+)
 
+# --- Setup auth header ---
+$base64Auth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$PAT"))
+$headers    = @{ Authorization = "Basic $base64Auth" }
+$apiVersion = "6.0"
+
+# --- 1) Get pipeline definition metadata ---
+$defUrl = "$Organization/$Project/_apis/build/definitions/$DefinitionId?api-version=$apiVersion"
+$def    = Invoke-RestMethod -Uri $defUrl -Headers $headers
+
+# Prepare a collection for service-connection references
+$svcRefs = [System.Collections.Generic.HashSet[string]]::new()
+
+if ($def.process.type -eq 1) {
+    #
+    # Classic pipeline: tasks embedded in the JSON
+    #
+    Write-Host "Detected Classic definition. Scanning tasks for service-connection inputs..." -ForegroundColor Cyan
+
+    # Walk all phases & steps
+    foreach ($phase in $def.process.phases) {
+        foreach ($step in $phase.steps) {
+            # Typical input names that hold service connections
+            foreach ($field in 'azureSubscription','connectedServiceName','serviceConnection','serviceEndpoint') {
+                if ($step.inputs.ContainsKey($field)) {
+                    $svcRefs.Add($step.inputs[$field]) | Out-Null
+                }
+            }
+        }
+    }
+}
+else {
+    #
+    # YAML pipeline: need to fetch the YAML file from the repo
+    #
+    Write-Host "Detected YAML definition. Fetching YAML ($($def.process.yamlFilename))..." -ForegroundColor Cyan
+
+    $repoId   = $def.repository.id
+    $yamlPath = $def.process.yamlFilename
+
+    $yamlUrl  = "$Organization/$Project/_apis/git/repositories/$repoId/items?path=$($yamlPath -replace ' ','%20')&includeContent=true&api-version=$apiVersion"
+    $yamlResp = Invoke-RestMethod -Uri $yamlUrl -Headers $headers
+
+    # Parse YAML (Install-Module powershell-yaml if you haven't already)
+    Import-Module powershell-yaml -ErrorAction Stop
+    $yamlObj = ConvertFrom-Yaml $yamlResp.content
+
+    # Look under `steps:` recursively for any inputs
+    function Scan-Steps {
+        param($steps)
+        foreach ($s in $steps) {
+            if ($s.inputs) {
+                foreach ($field in 'azureSubscription','connectedServiceName','serviceConnection','serviceEndpoint') {
+                    if ($s.inputs.ContainsKey($field)) {
+                        $svcRefs.Add($s.inputs[$field]) | Out-Null
+                    }
+                }
+            }
+            # nested job/template/include handling
+            if ($s.steps) { Scan-Steps -steps $s.steps }
+        }
+    }
+
+    if ($yamlObj.steps)    { Scan-Steps -steps $yamlObj.steps }
+    if ($yamlObj.jobs)     { foreach ($j in $yamlObj.jobs) { if ($j.steps) { Scan-Steps -steps $j.steps } } }
+    if ($yamlObj.stages)   { foreach ($st in $yamlObj.stages) {
+                                if ($st.jobs) { foreach ($j in $st.jobs) {
+                                                    if ($j.steps) { Scan-Steps -steps $j.steps }
+                                                } }
+                             } }
+}
+
+# --- 3) Output results ---
+if ($svcRefs.Count -gt 0) {
+    Write-Host "`nService connections referenced by pipeline #$DefinitionId:" -ForegroundColor Green
+    $svcRefs | Sort-Object
+}
+else {
+    Write-Host "`nNo service-connection inputs found in this pipeline." -ForegroundColor Yellow
+}
+
+
+
+
+
+
+
+
+
+
+
+
+##########################################################################################################
 <#
 .SYNOPSIS
   Classify Azure DevOps pipelines (YAML & classic) as Prod vs Non-Prod,
