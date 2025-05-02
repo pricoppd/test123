@@ -1,3 +1,139 @@
+<#
+.SYNOPSIS
+  Enumerate all service connections used by every release in every project.
+
+.DESCRIPTION
+  - Pulls all projects from https://dev.azure.com/{org}/_apis/projects
+  - Pulls all releases from https://vsrm.dev.azure.com/{org}/{project}/_apis/release/releases
+  - For each release, expands artifacts to see .definitionReference.connection
+
+.REQUIREMENTS
+  - PowerShell 7+ (for Invoke-WebRequest headers handling)
+  - AZDO_ORG and AZDO_PAT set in the environment, or fill in below.
+
+.EXAMPLE
+  PS> $env:AZDO_ORG = 'my-org'
+  PS> $env:AZDO_PAT = 'xxxxxxxxxxxx'
+  PS> ./Get-AllServiceConnections.ps1
+#>
+
+# —— CONFIGURATION ——
+# Either set these as env vars, or hard-code here:
+$Organization = $env:AZDO_ORG      # e.g. "my-azure-org"
+$Pat          = $env:AZDO_PAT      # your Personal Access Token
+$ApiVersion   = "7.2"
+
+if (-not $Organization -or -not $Pat) {
+    Write-Error "Please set AZDO_ORG and AZDO_PAT (or fill in the script)."
+    exit 1
+}
+
+# Prepare Basic auth header
+$base64AuthInfo = [Convert]::ToBase64String(
+    [Text.Encoding]::ASCII.GetBytes(":$Pat")
+)
+$AuthHeader = @{ Authorization = "Basic $base64AuthInfo" }
+
+function Get-AllProjects {
+    $baseUrl = "https://dev.azure.com/$Organization/_apis/projects?api-version=$ApiVersion"
+    $continuationToken = $null
+
+    do {
+        # Append continuationToken if present
+        $uri = if ($continuationToken) {
+            "$baseUrl&continuationToken=$continuationToken"
+        } else {
+            $baseUrl
+        }
+
+        $resp = Invoke-WebRequest -Uri $uri -Headers $AuthHeader -UseBasicParsing
+        $json = $resp.Content | ConvertFrom-Json
+
+        foreach ($proj in $json.value) {
+            $proj.name
+        }
+
+        $continuationToken = $resp.Headers["x-ms-continuationtoken"]
+    } while ($continuationToken)
+}
+
+function Get-AllReleases {
+    param($ProjectName)
+    $baseUrl = "https://vsrm.dev.azure.com/$Organization/$ProjectName/_apis/release/releases?api-version=$ApiVersion&`$top=100"
+    $continuationToken = $null
+
+    do {
+        $uri = if ($continuationToken) {
+            "$baseUrl&continuationToken=$continuationToken"
+        } else {
+            $baseUrl
+        }
+
+        $resp = Invoke-WebRequest -Uri $uri -Headers $AuthHeader -UseBasicParsing
+        $json = $resp.Content | ConvertFrom-Json
+
+        foreach ($rel in $json.value) {
+            $rel.id
+        }
+
+        $continuationToken = $resp.Headers["x-ms-continuationtoken"]
+    } while ($continuationToken)
+}
+
+function Get-ReleaseWithArtifacts {
+    param(
+        [string]$ProjectName,
+        [int]$ReleaseId
+    )
+
+    $uri = "https://vsrm.dev.azure.com/$Organization/$ProjectName/_apis/release/releases/$ReleaseId?api-version=$ApiVersion&`$expand=artifacts"
+    $resp = Invoke-WebRequest -Uri $uri -Headers $AuthHeader -UseBasicParsing
+    return ($resp.Content | ConvertFrom-Json)
+}
+
+# —— MAIN LOOP ——
+Write-Host "Scanning organization '$Organization'..." -ForegroundColor Cyan
+
+foreach ($projName in Get-AllProjects) {
+    Write-Host "`nProject: $projName" -ForegroundColor Yellow
+
+    foreach ($relId in Get-AllReleases -ProjectName $projName) {
+        $release = Get-ReleaseWithArtifacts -ProjectName $projName -ReleaseId $relId
+        Write-Host "  Release ID: $relId"
+
+        foreach ($artifact in $release.artifacts) {
+            $conn = $artifact.definitionReference.connection
+            if ($conn) {
+                Write-Host "    ➤ Service Connection ID: $($conn.id)"
+                Write-Host "      Name:               $($conn.name)"
+            }
+        }
+    }
+}
+
+Write-Host "`nDone." -ForegroundColor Green
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ############################################################################################################
 # Requires: PowerShell 7+, Install-Module powershell-yaml
 param(
