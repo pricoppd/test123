@@ -1,3 +1,28 @@
+# 1. Grab an access token from the MSI endpoint
+$msiUrl = 'http://169.254.169.254/metadata/identity/oauth2/token' +
+          '?api-version=2019-08-01&resource=https://vault.azure.net'
+$token = (Invoke-RestMethod `
+  -Method GET `
+  -Uri    $msiUrl `
+  -Headers @{ Metadata = 'true' } `
+).access_token
+
+# 2. Call Key Vault to fetch the secret
+$vaultName  = '<YourVaultName>'
+$secretName = '<YourSecretName>'
+
+$kvUrl = "https://$vaultName.vault.azure.net/secrets/$secretName?api-version=7.0"
+$secret = (Invoke-RestMethod `
+  -Method GET `
+  -Uri    $kvUrl `
+  -Headers @{ Authorization = "Bearer $token" } `
+).value
+
+# 3. Output the secret
+$secret
+
+
+#########################################
 <#
 .SYNOPSIS
   Enumerate all service connections used by every release in every project.
