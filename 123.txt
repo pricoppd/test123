@@ -1,3 +1,14 @@
+# Create the custom role
+az role definition create \
+  --role-definition approve-private-databricks-connections.json
+
+# Assign it to a user, service principal, or managed identity
+az role assignment create \
+  --assignee <user-or-spn> \
+  --role "approve-private-connections" \
+  --scope /subscriptions/<your-subscription-id>/resourceGroups/<rg-name>
+
+
 {
   "Name": "approve-private-connections",
   "IsCustom": true,
