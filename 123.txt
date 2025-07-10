@@ -1,3 +1,10 @@
+az account set --subscription "Your Subscription Name or ID"
+az keyvault show --name "myUniqueKeyVault" --resource-group "myResourceGroup" --query "properties.sku.name" --output tsv
+az keyvault update --name "myUniqueKeyVault" --resource-group "myResourceGroup" --set properties.sku.name=Premium
+az keyvault show --name "myUniqueKeyVault" --resource-group "myResourceGroup" --query "properties.sku.name" --output tsv
+
+
+
 #!/bin/bash
 
 # --- Configuration ---
