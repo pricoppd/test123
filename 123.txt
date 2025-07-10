@@ -1,3 +1,62 @@
+#!/bin/bash
+
+# --- Configuration ---
+RESOURCE_GROUP_NAME="myResourceGroup"  # Replace with your resource group name
+KEY_VAULT_NAME="myUniqueKeyVault"      # Replace with your Key Vault name
+
+# --- Get Key Vault details and check SKU ---
+echo "Getting details for Key Vault: $KEY_VAULT_NAME in resource group: $RESOURCE_GROUP_NAME"
+
+key_vault_sku=$(az keyvault show \
+    --name "$KEY_VAULT_NAME" \
+    --resource-group "$RESOURCE_GROUP_NAME" \
+    --query "properties.sku.name" \
+    --output tsv 2>/dev/null) # Redirect stderr to /dev/null to suppress "not found" errors initially
+
+if [ -z "$key_vault_sku" ]; then
+    echo "Error: Key Vault '$KEY_VAULT_NAME' not found in resource group '$RESOURCE_GROUP_NAME'."
+    exit 1
+fi
+
+echo "Current Key Vault SKU: $key_vault_sku"
+
+if [ "$key_vault_sku" = "Premium" ]; then
+    echo "Key Vault '$KEY_VAULT_NAME' is already set to Premium tier. No action needed."
+else
+    echo "Key Vault '$KEY_VAULT_NAME' is currently '$key_vault_sku' tier. Upgrading to Premium..."
+    az keyvault update \
+        --name "$KEY_VAULT_NAME" \
+        --resource-group "$RESOURCE_GROUP_NAME" \
+        --set properties.sku.name=Premium
+
+    if [ $? -eq 0 ]; then
+        echo "Successfully upgraded Key Vault '$KEY_VAULT_NAME' to Premium tier."
+    else
+        echo "Error: Failed to upgrade Key Vault '$KEY_VAULT_NAME' to Premium tier."
+        exit 1
+    fi
+fi
+
+# Optional: Verify the SKU after update
+echo "Verifying Key Vault SKU after potential update..."
+updated_key_vault_sku=$(az keyvault show \
+    --name "$KEY_VAULT_NAME" \
+    --resource-group "$RESOURCE_GROUP_NAME" \
+    --query "properties.sku.name" \
+    --output tsv)
+
+echo "Final Key Vault SKU: $updated_key_vault_sku"
+
+if [ "$updated_key_vault_sku" = "Premium" ]; then
+    echo "Confirmation: Key Vault '$KEY_VAULT_NAME' is indeed Premium."
+else
+    echo "Warning: Key Vault '$KEY_VAULT_NAME' is not Premium after the operation. Please investigate."
+fi
+
+
+
+
+
 # Create the custom role
 az role definition create \
   --role-definition approve-private-databricks-connections.json
