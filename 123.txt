@@ -1,3 +1,50 @@
+
+
+
+
+# Variables – update to your environment
+$rgName      = "myResourceGroup"
+$galleryName = "myGallery"
+
+# Get all image definitions in the gallery
+$definitions = Get-AzGalleryImageDefinition `
+    -ResourceGroupName $rgName `
+    -GalleryName $galleryName
+
+foreach ($def in $definitions) {
+    Write-Host "Processing Image Definition: $($def.Name)" -ForegroundColor Cyan
+
+    # Fetch all versions, sorting newest first by PublishedDate
+    $versions = Get-AzGalleryImageVersion `
+        -ResourceGroupName $rgName `
+        -GalleryName $galleryName `
+        -GalleryImageDefinitionName $def.Name |
+      Sort-Object { $_.PublishingProfile.PublishedDate } -Descending
+
+    # Determine which to delete (skip the first 5)
+    $toDelete = $versions | Select-Object -Skip 5
+
+    if ($toDelete.Count -eq 0) {
+        Write-Host "  No old versions to remove. Keeping all." -ForegroundColor Green
+    }
+    else {
+        foreach ($v in $toDelete) {
+            $name  = $v.Name
+            $date  = $v.PublishingProfile.PublishedDate
+            Write-Host "  Deleting version '$name' published on $date" -ForegroundColor Yellow
+
+            # Remove it
+            Remove-AzGalleryImageVersion `
+                -ResourceGroupName $rgName `
+                -GalleryName $galleryName `
+                -GalleryImageDefinitionName $def.Name `
+                -Name $name `
+                -Force
+        }
+    }
+}
+
+
 az account set --subscription "Your Subscription Name or ID"
 az keyvault show --name "myUniqueKeyVault" --resource-group "myResourceGroup" --query "properties.sku.name" --output tsv
 az keyvault update --name "myUniqueKeyVault" --resource-group "myResourceGroup" --set properties.sku.name=Premium
