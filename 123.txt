@@ -1,18 +1,12 @@
-Set your Resource Group, Gallery, and target Definition name
+Set your Resource Group, Gallery, and Definition
 
 powershell
 Copy
 Edit
-$rgName          = "myResourceGroup"
-$galleryName     = "myGallery"
-$definitionName  = "myImageDefinition"    # ← only this one
-Define the list of versions you want to delete
-
-powershell
-Copy
-Edit
-$versionsToDelete = @("1.0.0", "2.0.0-preview")  
-(Optional) Preview available versions for that definition
+$rgName         = "myResourceGroup"
+$galleryName    = "myGallery"
+$definitionName = "myImageDefinition"
+List all versions (with their publish dates) for that definition
 
 powershell
 Copy
@@ -21,27 +15,44 @@ Get-AzGalleryImageVersion `
   -ResourceGroupName $rgName `
   -GalleryName $galleryName `
   -GalleryImageDefinitionName $definitionName |
-Select-Object -ExpandProperty Name
-Dry‑run: show what would be deleted
+Select-Object Name, @{N='PublishedDate';E={$_.PublishingProfile.PublishedDate}} |
+Format-Table -AutoSize
+Sort versions newest‑first and capture them
 
 powershell
 Copy
 Edit
-foreach ($ver in $versionsToDelete) {
-  Write-Host "[DRY‑RUN] Would delete version '$ver' from '$definitionName'"
+$allVersions = Get-AzGalleryImageVersion `
+  -ResourceGroupName $rgName `
+  -GalleryName $galleryName `
+  -GalleryImageDefinitionName $definitionName |
+  Sort-Object { $_.PublishingProfile.PublishedDate } -Descending
+Keep the first 5, mark the rest for deletion
+
+powershell
+Copy
+Edit
+$toDelete = $allVersions | Select-Object -Skip 5
+Dry‑run: preview which versions would be removed
+
+powershell
+Copy
+Edit
+foreach ($v in $toDelete) {
+  Write-Host "[DRY‑RUN] Would delete version '$($v.Name)' published on $($v.PublishingProfile.PublishedDate)"
 }
-Perform the deletion
+Delete the old versions
 
 powershell
 Copy
 Edit
-foreach ($ver in $versionsToDelete) {
-  Write-Host "Deleting version '$ver' from '$definitionName'" -ForegroundColor Yellow
+foreach ($v in $toDelete) {
+  Write-Host "Deleting version '$($v.Name)'" -ForegroundColor Yellow
   Remove-AzGalleryImageVersion `
     -ResourceGroupName $rgName `
     -GalleryName $galleryName `
     -GalleryImageDefinitionName $definitionName `
-    -Name $ver `
+    -Name $v.Name `
     -Force
 }
 
