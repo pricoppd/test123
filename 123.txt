@@ -1,4 +1,130 @@
+Set your resource group and gallery names
 
+powershell
+Copy
+Edit
+$rgName      = "myResourceGroup"
+$galleryName = "myGallery"
+Define the list of versions you want to delete
+
+powershell
+Copy
+Edit
+$versionsToDelete = @("versionA", "versionB", "versionC")
+Fetch all image definitions in the gallery
+
+powershell
+Copy
+Edit
+$definitions = Get-AzGalleryImageDefinition `
+  -ResourceGroupName $rgName `
+  -GalleryName $galleryName
+(Dry‑run) Preview what would be deleted
+
+powershell
+Copy
+Edit
+foreach ($def in $definitions) {
+  foreach ($ver in $versionsToDelete) {
+    Write-Host "[DRY‑RUN] Would delete version '$ver' from definition '$($def.Name)'"
+  }
+}
+Check the output and confirm these are the ones you really intend to remove.
+
+Perform the deletion
+
+powershell
+Copy
+Edit
+foreach ($def in $definitions) {
+  foreach ($ver in $versionsToDelete) {
+    Write-Host "Deleting version '$ver' from definition '$($def.Name)'" -ForegroundColor Yellow
+    Remove-AzGalleryImageVersion `
+      -ResourceGroupName $rgName `
+      -GalleryName $galleryName `
+      -GalleryImageDefinitionName $def.Name `
+      -Name $ver `
+      -Force
+  }
+}
+After step 5 runs, each specified version will be removed from every image definition in the gallery.
+
+
+
+
+
+
+
+
+
+Ask ChatGPT
+You said:
+give all the commands
+
+
+ChatGPT said:
+Here are all the PowerShell commands you’ll run, in order. Just paste each block into your session and press Enter.
+
+Set your Resource Group and Gallery names
+
+powershell
+Copy
+Edit
+$rgName      = "myResourceGroup"
+$galleryName = "myGallery"
+Define the list of versions you want to delete
+
+powershell
+Copy
+Edit
+$versionsToDelete = @("versionA", "versionB", "versionC")
+Fetch all image definitions in the gallery
+
+powershell
+Copy
+Edit
+$definitions = Get-AzGalleryImageDefinition `
+  -ResourceGroupName $rgName `
+  -GalleryName $galleryName
+Dry‑run: Preview what would be deleted
+
+powershell
+Copy
+Edit
+foreach ($def in $definitions) {
+  foreach ($ver in $versionsToDelete) {
+    Write-Host "[DRY‑RUN] Would delete version '$ver' from definition '$($def.Name)'"
+  }
+}
+Perform the deletion
+
+powershell
+Copy
+Edit
+foreach ($def in $definitions) {
+  foreach ($ver in $versionsToDelete) {
+    Write-Host "Deleting version '$ver' from definition '$($def.Name)'" -ForegroundColor Yellow
+    Remove-AzGalleryImageVersion `
+      -ResourceGroupName $rgName `
+      -GalleryName $galleryName `
+      -GalleryImageDefinitionName $def.Name `
+      -Name $ver `
+      -Force
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+########################################################
 
 
 
