@@ -1,3 +1,20 @@
+# Disable FTP Basic Auth Publishing Credentials
+az resource update \
+  --resource-group "<RESOURCE_GROUP>" \
+  --namespace Microsoft.Web \
+  --resource-type basicPublishingCredentialsPolicies \
+  --parent "sites/<FUNCTION_APP_NAME>" \
+  --name ftp \
+  --set properties.allow=false
+
+# Disable SCM Basic Auth Publishing Credentials (the Kudu/Git/ZIP endpoint)
+az resource update \
+  --resource-group "<RESOURCE_GROUP>" \
+  --namespace Microsoft.Web \
+  --resource-type basicPublishingCredentialsPolicies \
+  --parent "sites/<FUNCTION_APP_NAME>" \
+  --name scm \
+  --set properties.allow=false
 
 
 
