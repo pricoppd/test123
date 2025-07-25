@@ -1,3 +1,28 @@
+
+AzureDiagnostics
+| where Resource == "<YOUR_FIREWALL_NAME>"
+| where Category in ("AzureFirewallApplicationRule", "AzureFirewallNetworkRule", "AzureFirewallNatRule")
+| where TimeGenerated > ago(7d)  // Optional: last 7 days
+| summarize Hits = count() by RuleCollectionName_s, RuleName_s, Category
+| order by Hits desc
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Disable FTP Basic Auth Publishing Credentials
 az resource update \
   --resource-group "<RESOURCE_GROUP>" \
