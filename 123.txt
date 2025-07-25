@@ -1,6 +1,6 @@
 
 AzureDiagnostics
-| where Resource == "<YOUR_FIREWALL_NAME>"
+| where Resource == "<FIREWALL_NAME>" or FirewallPolicyName_s == "<FIREWALL_POLICY_NAME>"
 | where Category in ("AzureFirewallApplicationRule", "AzureFirewallNetworkRule", "AzureFirewallNatRule")
 | where TimeGenerated > ago(7d)  // Optional: last 7 days
 | summarize Hits = count() by RuleCollectionName_s, RuleName_s, Category
