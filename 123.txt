@@ -1,3 +1,50 @@
+kubectl get pods -A -o json | jq -r '
+  def digest_from_imageid:
+    ( . // "" 
+      | gsub("^docker-pullable://|^docker://|^containerd://"; "")
+      | if contains("@") then (split("@")|.[1])
+        elif test("^sha256:[0-9a-fA-F]+$") then .
+        else "" end );
+  def parse_image:
+    capture("^(?:(?<registry>[^/]+)/)?(?<repo>(?:[^/@:]+/)*[^/@:]+)(?::(?<tag>[^@]+))?") // {};
+  .items[] as $p
+  | ($p.status.initContainerStatuses // [] 
+     + $p.status.containerStatuses // [] 
+     + $p.status.ephemeralContainerStatuses // [])[]?
+  | (.image | parse_image) as $img
+  | [
+      $p.metadata.namespace,
+      $p.metadata.name,
+      .name,
+      ($img.registry // ""),
+      ($img.repo // ""),
+      ($img.tag // ""),
+      (.imageID | digest_from_imageid)
+    ]
+  | @csv
+' > pod-image-digests.csv
+#######################################################
+kubectl get pods -A \
+  -o custom-columns=NS:.metadata.namespace,POD:.metadata.name,CONTAINERS:.spec.containers[*].name,IMAGES:.spec.containers[*].image,DIGESTS:.status.containerStatuses[*].imageID \
+  --no-headers
+
+
+
+
+
+
+############################################
+
+
+
+
+
+
+
+
+
+
+
 Easiest: use kubectl (works the same for AKS). First make sure you’re on the right cluster:
 
 az aks get-credentials -g <RESOURCE_GROUP> -n <AKS_CLUSTER_NAME> --overwrite-existing
