@@ -1,3 +1,38 @@
+Easiest: use kubectl (works the same for AKS). First make sure you’re on the right cluster:
+
+az aks get-credentials -g <RESOURCE_GROUP> -n <AKS_CLUSTER_NAME> --overwrite-existing
+kubectl config current-context
+
+Quick one-liner (all pods, all namespaces)
+kubectl get pods -A \
+  -o custom-columns=NAMESPACE:.metadata.namespace,POD:.metadata.name,IMAGES:.spec.containers[*].image \
+  --no-headers
+
+
+Shows each pod and the image(s) of its regular containers (comma-separated if multiple).
+
+Include init + ephemeral containers too (more complete)
+kubectl get pods -A -o json | jq -r '
+  .items[] as $p |
+  ($p.metadata.namespace + "\t" + $p.metadata.name + "\t" +
+   ([
+      ($p.spec.initContainers[]?.image),
+      ($p.spec.containers[]?.image),
+      ($p.spec.ephemeralContainers[]?.image)
+    ] | map(select(. != null)) | unique | join(",")))
+'
+
+Save to CSV
+kubectl get pods -A \
+  -o custom-columns=NAMESPACE:.metadata.namespace,POD:.metadata.name,IMAGES:.spec.containers[*].image \
+  --no-headers > pod-images.csv
+
+(Optional) If you actually want images by workload (Deployments, etc.)
+kubectl get deploy -A \
+  -o custom-columns=NAMESPACE:.metadata.namespace,DEPLOYMENT:.metadata.name,IMAGES:.spec.template.spec.containers[*].image \
+  --no-headers
+
+
 
 AzureDiagnostics
 | where Resource == "<FIREWALL_NAME>" or FirewallPolicyName_s == "<FIREWALL_POLICY_NAME>"
