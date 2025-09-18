@@ -1,3 +1,40 @@
+# Get Namespace/Pod/Container + the pulled image digest (sha256)
+$pods = kubectl get pods -A -o json | ConvertFrom-Json
+
+$rows = foreach ($p in $pods.items) {
+  $ns  = $p.metadata.namespace
+  $pod = $p.metadata.name
+
+  $statuses = @()
+  foreach ($k in 'initContainerStatuses','containerStatuses','ephemeralContainerStatuses') {
+    if ($p.status.$k) { $statuses += $p.status.$k }
+  }
+
+  foreach ($s in $statuses) {
+    $id = $s.imageID
+    $digest = ''
+    if ($id) {
+      $id = $id -replace '^(docker-pullable|docker|containerd)://',''
+      if ($id -like '*@*')       { $digest = $id.Split('@')[-1] }
+      elseif ($id -match '^sha256:[0-9a-fA-F]+$') { $digest = $id }
+    }
+
+    [pscustomobject]@{
+      Namespace = $ns
+      Pod       = $pod
+      Container = $s.name
+      Digest    = $digest
+    }
+  }
+}
+
+$rows | Sort-Object Namespace,Pod,Container | Format-Table -AutoSize
+# Export if you want:
+# $rows | Export-Csv .\pod-image-digests_minimal.csv -NoTypeInformation -Encoding UTF8
+
+
+
+
 ###sha
 kubectl get pods -A -o json | jq -r '
   def digest_from_imageid:
