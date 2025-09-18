@@ -1,3 +1,27 @@
+###sha
+kubectl get pods -A -o json | jq -r '
+  def digest_from_imageid:
+    ( . // "" 
+      | gsub("^docker-pullable://|^docker://|^containerd://"; "")
+      | if contains("@") then (split("@")|.[1])
+        elif test("^sha256:[0-9a-fA-F]+$") then .
+        else "" end );
+  .items[] as $p
+  | ($p.status.initContainerStatuses // [] 
+     + $p.status.containerStatuses // [] 
+     + $p.status.ephemeralContainerStatuses // [])[]?
+  | [
+      $p.metadata.namespace,
+      $p.metadata.name,
+      .name,
+      (.imageID | digest_from_imageid)
+    ]
+  | @tsv
+' | column -t
+
+
+#############
+
 kubectl get pods -A -o json | jq -r '
   def digest_from_imageid:
     ( . // "" 
