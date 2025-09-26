@@ -1,3 +1,22 @@
+# --------- CONFIG ---------
+$Organization = ""          # org name only
+$Pat          = "YOUR_PAT_HERE"
+$OutCsv       = ""
+# --------------------------
+
+# Normalize org (strip full URL, commas, spaces)
+$Organization = ($Organization -replace '^https?://[^/]+/', '') -replace '^/|/$',''
+$Organization = $Organization -replace '[^\w\-]', ''  # keep letters/digits/hyphen only
+
+$baseUri = "https://dev.azure.com/$Organization/_apis"
+$auth    = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$Pat"))
+$headers = @{ Authorization = "Basic $auth"; Accept = "application/json" }
+
+# Quick auth check
+Invoke-RestMethod -Headers $headers -Uri "$baseUri/connectionData?api-version=7.1-preview.1" | Out-Null
+
+
+
 # =========================
 # Azure DevOps Agent Pools Inventory
 # =========================
