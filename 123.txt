@@ -1,58 +1,45 @@
 <# 
-Azure DevOps Agent Pools Inventory (AAD App Auth)
-- Auth: Azure AD client credentials (service principal)
-- Outputs one row per agent with pool stats and "last used" timestamp.
+Azure DevOps Agent Pools Inventory
+Auth: AAD client credentials EXACTLY as in the screenshot (oauth2/token + resource)
 #>
 
-param(
-    [string]$Organization    = "your-org-name",  # e.g. contoso  (org name only; not a URL)
-    [string]$TenantId        = "",               # AAD tenant ID (GUID) or domain
-    [string]$ClientId        = "",               # App registration (service principal) client ID
-    [string]$ClientSecret    = "",               # Client secret
-    [string]$OutCsv          = ""                # e.g. "C:\temp\ado-agent-pools.csv"; leave blank to skip
+param (
+    [string]$AzOrgURL     = "",   # e.g. "https://dev.azure.com/contoso"
+    [string]$tenantId     = "",
+    [string]$clientId     = "",
+    [string]$clientSecret = "",
+    [string]$OutCsv       = ""    # e.g. "C:\temp\ado-agent-pools.csv"; leave blank to skip
 )
 
-# -------------------- Auth (Azure AD client credentials) --------------------
-if ([string]::IsNullOrWhiteSpace($TenantId) -or
-    [string]::IsNullOrWhiteSpace($ClientId) -or
-    [string]::IsNullOrWhiteSpace($ClientSecret)) {
-    throw "TenantId/ClientId/ClientSecret are required for AAD auth."
+# -------- AUTH (exactly like your picture) --------
+$resource = "499b84ac-1321-427f-aa17-267ca6975798"
+
+$body = @{
+    grant_type    = "client_credentials"
+    client_id     = $clientId
+    client_secret = $clientSecret
+    resource      = $resource
 }
 
-# Normalize organization (strip accidental URL, commas, spaces)
-$Organization = ($Organization -replace '^https?://[^/]+/', '') -replace '^/|/$',''
-$Organization = $Organization.Trim().Trim(',')
+# Get the token (v1 endpoint; no extra content-type on purpose)
+$response = Invoke-RestMethod -Method Post -Uri "https://login.microsoftonline.com/$tenantId/oauth2/token" -Body $body
+$token    = $response.access_token
 
-$baseUri = "https://dev.azure.com/$Organization/_apis"
+# Display/keep token + build headers exactly like in your snippet
+$token
+$headers = @{}
+$headers.Add("Accept", "application/json")
+$headers.Add("Authorization", "Bearer $token")
 
-# Acquire token for Azure DevOps (resource: 499b84ac-1321-427f-aa17-267ca6975798)
-$tokenResponse = Invoke-RestMethod -Method Post `
-    -Uri "https://login.microsoftonline.com/$TenantId/oauth2/v2.0/token" `
-    -ContentType "application/x-www-form-urlencoded" `
-    -Body @{
-        client_id     = $ClientId
-        client_secret = $ClientSecret
-        grant_type    = "client_credentials"
-        scope         = "499b84ac-1321-427f-aa17-267ca6975798/.default"
-    }
+# (kept to mirror the screenshot; not used below)
+$base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$token"))
 
-$token = $tokenResponse.access_token
-if (-not $token) { throw "Failed to obtain AAD access token. Check app credentials and permissions." }
+# -------- BASE URL --------
+# Use AzOrgURL exactly as provided; just trim a trailing slash if present
+if ($AzOrgURL.EndsWith("/")) { $AzOrgURL = $AzOrgURL.TrimEnd("/") }
+$baseUri = "$AzOrgURL/_apis"
 
-$headers = @{
-    Authorization = "Bearer $token"
-    Accept        = "application/json"
-}
-
-# Smoke test (fail fast if org/app lacks rights)
-try {
-    Invoke-RestMethod -Headers $headers -Uri "$baseUri/connectionData?api-version=7.1-preview.1" | Out-Null
-}
-catch {
-    throw "Auth check failed for org '$Organization'. Ensure the service principal has org access and Agent Pools permissions. $_"
-}
-
-# -------------------- REST helper --------------------
+# -------- Helper --------
 function Invoke-ADO {
     param([Parameter(Mandatory=$true)][string]$Uri)
     try {
@@ -64,8 +51,15 @@ function Invoke-ADO {
     }
 }
 
-# -------------------- Main logic --------------------
-# Find all pools
+# -------- Smoke test --------
+try {
+    Invoke-RestMethod -Headers $headers -Uri "$baseUri/connectionData?api-version=7.1-preview.1" | Out-Null
+}
+catch {
+    throw "Auth/org check failed. Ensure the service principal has access to the Azure DevOps organization and Agent Pools. $_"
+}
+
+# -------- Main: list pools and agents --------
 $poolsUri = "$baseUri/distributedtask/pools?api-version=7.1-preview.1"
 $pools    = (Invoke-ADO -Uri $poolsUri).value
 
@@ -77,15 +71,15 @@ if (-not $pools) {
 $results = New-Object System.Collections.Generic.List[object]
 
 foreach ($pool in $pools) {
-    # Get agents for this pool (include capabilities to infer image)
+    # Agents (include capabilities to infer image)
     $agentsUri   = "$baseUri/distributedtask/pools/$($pool.id)/agents?includeCapabilities=true&includeAssignedRequest=true&includeLastCompletedRequest=true&api-version=7.1-preview.1"
     $agentsValue = (Invoke-ADO -Uri $agentsUri).value
 
-    # Compute online/offline counts
+    # Online/offline counts
     $onlineCount  = ($agentsValue | Where-Object { $_.status -eq "online" }).Count
     $offlineCount = ($agentsValue | Where-Object { $_.status -ne "online" }).Count
 
-    # Infer "last used" time for the pool from job requests (fallback: agents' lastOnlineTime)
+    # Last used from job requests (fallback: agents' lastOnlineTime)
     $lastUsed = $null
     try {
         $jobReqUri = "$baseUri/distributedtask/pools/$($pool.id)/jobrequests?completedRequestCount=1&api-version=7.1-preview.1"
@@ -116,7 +110,7 @@ foreach ($pool in $pools) {
             ?? $cap.'Agent.OS'
 
         $results.Add([pscustomobject]@{
-            Organization    = $Organization
+            Organization    = ($AzOrgURL -replace '^https?://', '')
             PoolName        = $pool.name
             PoolId          = $pool.id
             LastUsedUtc     = if ($lastUsed) { [datetime]::SpecifyKind($lastUsed, 'Utc').ToString("u") } else { $null }
@@ -134,7 +128,7 @@ foreach ($pool in $pools) {
     # If a pool has no visible agents, still emit a summary row
     if (-not $agentsValue -or $agentsValue.Count -eq 0) {
         $results.Add([pscustomobject]@{
-            Organization    = $Organization
+            Organization    = ($AzOrgURL -replace '^https?://', '')
             PoolName        = $pool.name
             PoolId          = $pool.id
             LastUsedUtc     = if ($lastUsed) { [datetime]::SpecifyKind($lastUsed, 'Utc').ToString("u") } else { $null }
@@ -150,16 +144,17 @@ foreach ($pool in $pools) {
     }
 }
 
-# Output
+# -------- Output --------
 $results | Sort-Object PoolName, AgentName | Format-Table -AutoSize
 
-# Optional CSV
 if ($OutCsv) {
     $results | Sort-Object PoolName, AgentName |
         Export-Csv -NoTypeInformation -Encoding UTF8 -Path $OutCsv
     Write-Host "Saved to $OutCsv" -ForegroundColor Green
 }
 
+
+##########################
 
 
 
