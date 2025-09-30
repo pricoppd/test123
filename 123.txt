@@ -1,3 +1,26 @@
+# Variables (replace with yours)
+RESOURCE_GROUP="rg-linux-demo"
+VM_NAME="rhelvm01"
+LOCATION="westeurope"
+SIZE="Standard_DS2_v2"
+ADMIN_USER="azureuser"
+SSH_KEY_PATH="$HOME/.ssh/id_rsa.pub"
+
+# Existing resource IDs
+IMAGE_ID="/subscriptions/<subId>/resourceGroups/<galleryRG>/providers/Microsoft.Compute/galleries/<galleryName>/images/<imageDefName>/versions/<version>"
+SUBNET_ID="/subscriptions/<subId>/resourceGroups/<networkRG>/providers/Microsoft.Network/virtualNetworks/<vnetName>/subnets/<subnetName>"
+
+# Create the VM
+az vm create \
+  --resource-group $RESOURCE_GROUP \
+  --name $VM_NAME \
+  --location $LOCATION \
+  --size $SIZE \
+  --admin-username $ADMIN_USER \
+  --ssh-key-values $SSH_KEY_PATH \
+  --image $IMAGE_ID \
+  --subnet $SUBNET_ID 
+########################################################################################
 <# 
 Azure DevOps Agent Pools Inventory
 Auth: AAD client credentials EXACTLY as in the screenshot (oauth2/token + resource)
