@@ -1,3 +1,38 @@
+Step 1. Get your AKS cluster’s kubelet identity
+az aks show -g <resource-group> -n <cluster-name> \
+  --query identityProfile.kubeletidentity.objectId -o tsv
+
+
+Save that Object ID (something like b1234567-89ab-cdef-0123-456789abcdef).
+
+Step 2. Grant ACR Pull permissions
+
+Get the resource ID of your second registry:
+
+az acr show -n <second-acr-name> --query id -o tsv
+
+
+Then attach it:
+
+az role assignment create \
+  --assignee <kubelet_object_id> \
+  --role AcrPull \
+  --scope $(az acr show -n <second-acr-name> --query id -o tsv)
+
+
+✅ This explicitly gives your AKS nodes permission to pull from that registry.
+
+🧩 Step 3. Verify it worked
+
+List all AcrPull role assignments for the kubelet identity:
+
+az role assignment list \
+  --assignee <kubelet_object_id> \
+  --query "[?roleDefinitionName=='AcrPull'].[scope]" -o tsv
+
+################################################################################
+
+
 kubectl get pod <POD_NAME> -n <NAMESPACE> -o jsonpath='{.spec.containers[*].name}'
 
 
