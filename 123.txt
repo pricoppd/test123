@@ -1,3 +1,13 @@
+docker build `
+  --build-arg NEXUS_URL="https://nexus.mycompany.com/repository" `
+  --build-arg NEXUS_USER="my-nexus-username" `
+  --build-arg NEXUS_PASS="my-nexus-token" `
+  -t my-app:local .
+
+
+######################
+
+
 Step 1. Get your AKS cluster’s kubelet identity
 az aks show -g <resource-group> -n <cluster-name> \
   --query identityProfile.kubeletidentity.objectId -o tsv
