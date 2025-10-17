@@ -1,3 +1,53 @@
+Here’s what that command adds/enables in your AKS cluster:
+
+AKS add-on enabled: the Azure Container Storage add-on is turned on in the cluster’s add-on profile.
+
+System components installed: ACS operator/controllers and a node daemonset are deployed in the system namespace.
+
+CRDs registered: ACS custom resources (e.g., StoragePool, Volume, replication objects) are added.
+
+RBAC & webhooks: required ClusterRoles/RoleBindings and admission/webhook configs for ACS are created.
+
+Not created yet: no StoragePools, StorageClasses, PVs, or backing disks are made until you define a StoragePool (that’s when StorageClasses and actual volumes appear). Existing pods/ PVCs are untouched.
+
+You said:
+give all the aks commands that will show all this changes
+ChatGPT said:
+Thought for 12s
+
+Here’s a tight checklist of commands to verify everything ACS added after you enable it.
+
+1) Add-on enabled (AKS control plane)
+az aks show -g <rg> -n <cluster> --query "addonProfiles.azureContainerStorage.enabled" -o tsv
+az aks show -g <rg> -n <cluster> --query "addonProfiles" -o json
+
+2) System components (operators/daemonsets/pods)
+# look for ACS controllers/agents
+kubectl get deploy,ds,po -A | egrep -i "azure.*container.*storage|container.*storage|acs"
+# (optional) details
+kubectl get deploy,ds -n kube-system -o wide
+
+3) CRDs installed
+kubectl get crd | egrep -i "storagepool|container.*storage|azure.*container.*storage|volume"
+kubectl api-resources | egrep -i "storagepool|volume|replica|replication"
+
+4) RBAC + webhooks created
+kubectl get clusterrole,clusterrolebinding | egrep -i "container.*storage|acs"
+kubectl get validatingwebhookconfigurations,mutatingwebhookconfigurations | egrep -i "container.*storage|acs|volume"
+
+5) StorageClasses (none until you make a StoragePool)
+kubectl get storageclass
+
+6) ACS custom resources (only after you create them)
+# if/when you define a StoragePool, these should exist:
+kubectl get storagepools --all-namespaces
+kubectl get volumes --all-namespaces
+
+
+Tip: if the name patterns differ in your build, keep the greps broad (as above) or run kubectl get all -A once and eyeball entries related to container/storage.
+#################################################################################################################################################################
+
+
 docker build `
   --build-arg NEXUS_URL="https://nexus.mycompany.com/repository" `
   --build-arg NEXUS_USER="my-nexus-username" `
