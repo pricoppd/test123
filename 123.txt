@@ -1,3 +1,19 @@
+# Enable admin account (skip if already enabled)
+az acr update -n <acrName> --admin-enabled true
+
+# Fetch username & password
+USER=$(az acr credential show -n <acrName> --query username -o tsv)
+PASS=$(az acr credential show -n <acrName> --query "passwords[0].value" -o tsv)
+
+# Docker login with the access key
+echo "$PASS" | docker login <acrName>.azurecr.io -u "$USER" --password-stdin
+
+# Tag & push
+docker tag myimg:1.0 <acrName>.azurecr.io/myrepo/myimg:1.0
+docker push <acrName>.azurecr.io/myrepo/myimg:1.0
+
+
+###############################################################################################################
 Here’s what that command adds/enables in your AKS cluster:
 
 AKS add-on enabled: the Azure Container Storage add-on is turned on in the cluster’s add-on profile.
