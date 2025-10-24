@@ -1,3 +1,28 @@
+# 0) See what's masked/available
+systemctl list-unit-files | grep -E '^(ssh|sshd)\.service'
+systemctl status sshd || systemctl status ssh
+
+# 1) Unmask (pick whichever exists)
+sudo systemctl unmask sshd 2>/dev/null || sudo systemctl unmask ssh
+
+# 2) Validate your SSH config before starting (very important)
+sudo sshd -t || sudo /usr/sbin/sshd -t
+# If this prints nothing, the config is OK.
+# If it reports an error (your status showed a note about "sshd_config line 3"),
+# fix /etc/ssh/sshd_config and re-run the test until it's clean.
+
+# 3) Start and enable at boot
+sudo systemctl enable --now sshd 2>/dev/null || sudo systemctl enable --now ssh
+
+# 4) Verify it's running and listening
+(systemctl is-active sshd || systemctl is-active ssh)
+sudo ss -lntp | grep -E ':(22)\b|sshd' || sudo lsof -iTCP -sTCP:LISTEN -P | grep sshd
+
+# 5) If it still won’t start, show logs
+sudo journalctl -u sshd -b || sudo journalctl -u ssh -b
+
+##########################################################
+
 # Enable admin account (skip if already enabled)
 az acr update -n <acrName> --admin-enabled true
 
