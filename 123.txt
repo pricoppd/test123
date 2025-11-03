@@ -1,3 +1,10 @@
+DOCKER_BUILDKIT=1 docker build \
+  --secret id=nexus-username,src=/path/to/nexus-username.txt \
+  --secret id=nexus-password,src=/path/to/nexus-password.txt \
+  -t my-image-name .
+
+
+
 # 0) See what's masked/available
 systemctl list-unit-files | grep -E '^(ssh|sshd)\.service'
 systemctl status sshd || systemctl status ssh
