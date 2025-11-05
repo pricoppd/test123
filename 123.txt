@@ -1,3 +1,58 @@
+#################################################################################
+
+# Dockerfile
+# Downloads Az .nupkg file directly from Nexus using curl
+# Then installs it via PowerShell locally
+
+FROM mcr.microsoft.com/powershell:7-ubuntu-22.04
+
+ENV POWERSHELL_TELEMETRY_OPTOUT=1
+
+# ---- build-time args ----
+ARG AZ_VERSION=12.3.0
+# Example:
+#   https://nexus.example.com/repository/nuget_proxy_powershellgallery_iq/Az/12.3.0/Az.12.3.0.nupkg
+ARG NEXUS_NUPKG_URL
+# Optional: if Nexus requires auth, pass credentials here
+ARG NEXUS_USER
+ARG NEXUS_PASS
+
+# Local path for the downloaded package
+ENV NUPKG_PATH=/tmp/Az.nupkg
+
+# Install curl & certificates
+RUN apt-get update && apt-get install -y curl ca-certificates && rm -rf /var/lib/apt/lists/*
+
+# ---- Download Az nupkg from Nexus ----
+RUN set -eux; \
+    if [ -z "$NEXUS_NUPKG_URL" ]; then \
+        echo "❌ ERROR: Must provide NEXUS_NUPKG_URL build arg"; exit 1; \
+    fi; \
+    echo "📦 Downloading Az module nupkg from Nexus..."; \
+    if [ -n "$NEXUS_USER" ]; then \
+        curl -u "${NEXUS_USER}:${NEXUS_PASS}" -L "$NEXUS_NUPKG_URL" -o "$NUPKG_PATH"; \
+    else \
+        curl -L "$NEXUS_NUPKG_URL" -o "$NUPKG_PATH"; \
+    fi; \
+    echo "✅ Download complete: $NUPKG_PATH"
+
+# ---- Install Az from the local .nupkg ----
+RUN pwsh -NoLogo -NoProfile -Command \
+    Set-StrictMode -Version Latest; \
+    $pkg = $env:NUPKG_PATH; \
+    if (-not (Test-Path $pkg)) { throw "Package not found: $pkg" }; \
+    Install-PackageProvider -Name NuGet -Force -MinimumVersion 2.8.5.201 | Out-Null; \
+    # Install the .nupkg directly from local path
+    Install-Package -Name Az -Source $pkg -Force -Scope AllUsers; \
+    # Verify installation
+    Get-Module -ListAvailable Az | Out-Host
+
+CMD ["pwsh"]
+
+
+#################################################################################
+
+
 DOCKER_BUILDKIT=1 docker build \
   --secret id=nexus-username,src=/path/to/nexus-username.txt \
   --secret id=nexus-password,src=/path/to/nexus-password.txt \
