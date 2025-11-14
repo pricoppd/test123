@@ -1,3 +1,13 @@
+docker commit \
+  --change 'ENV AZP_URL=https://dev.azure.com/1111' \
+  --change 'ENV AZP_TOKEN_SCALE=' \
+  --change 'ENV AZP_TOKEN=' \
+  --change 'ENV devops_svc_pass=' \
+  tmp-container myimage-updated:latest
+
+#####################################
+
+
 az acr repository download \
   --name <ACR_NAME> \
   --image <repository>:<tag> \
