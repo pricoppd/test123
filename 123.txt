@@ -1,3 +1,13 @@
+az acr repository download \
+  --name <ACR_NAME> \
+  --image <repository>:<tag> \
+  --path <output-folder>
+
+
+##############################################################################
+
+
+
 kubectl create secret generic kv-secret \
   --namespace=-linux-dev-blue \
   --from-literal=AZP_TOKEN=ffmdfsdfsdfsdfsd \
