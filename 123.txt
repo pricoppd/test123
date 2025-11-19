@@ -1,3 +1,7 @@
+
+kubectl get pod -A -o wide --field-selector spec.nodeName=<NODE_NAME>
+
+################
 RG="<your-main-aks-rg>"
 CLUSTER="<your-aks-cluster-name>"
 SUBNET_ID="<existing-aks-subnet-resource-id>"   # same subnet as current pool
