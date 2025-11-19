@@ -1,3 +1,29 @@
+RG="<your-main-aks-rg>"
+CLUSTER="<your-aks-cluster-name>"
+SUBNET_ID="<existing-aks-subnet-resource-id>"   # same subnet as current pool
+
+az aks nodepool add \
+  --resource-group $RG \
+  --cluster-name $CLUSTER \
+  --name spotnodpool2 \
+  --mode User \
+  --priority Spot \
+  --eviction-policy Delete \
+  --spot-max-price -1 \                       # "On-demand pricing"
+  --node-vm-size Standard_D8ads_v5 \
+  --node-count 2 \                            # starting nodes
+  --max-pods 60 \
+  --enable-cluster-autoscaler \
+  --min-count 2 \
+  --max-count 5 \
+  --vnet-subnet-id $SUBNET_ID \
+  --zones 2 3 \
+  --node-taints "kubernetes.azure.com/scalesetpriority=spot:NoSchedule" \
+  --node-labels "kubernetes.azure.com/scalesetpriority=spot"
+
+#######################################
+
+
 docker commit \
   --change 'ENV AZP_URL=https://dev.azure.com/1111' \
   --change 'ENV AZP_TOKEN_SCALE=' \
