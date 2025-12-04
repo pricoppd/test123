@@ -1,4 +1,28 @@
+# 1. Install prerequisites  
+sudo apt-get update  
+sudo apt-get install -y ca-certificates curl apt-transport-https gnupg lsb-release  
 
+# 2. Add Microsoft’s GPG key for package signing  
+sudo mkdir -p /etc/apt/keyrings  
+curl -sL https://packages.microsoft.com/keys/microsoft.asc \
+  | gpg --dearmor \
+  | sudo tee /etc/apt/keyrings/microsoft.gpg > /dev/null  
+sudo chmod go+r /etc/apt/keyrings/microsoft.gpg
+
+# 3. Add the Azure CLI repository  
+AZ_DIST=$(lsb_release -cs)  # e.g. "focal", "jammy", etc.
+echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/azure-cli/ $AZ_DIST main" \
+  | sudo tee /etc/apt/sources.list.d/azure-cli.list
+
+# 4. Update and install Azure CLI  
+sudo apt-get update  
+sudo apt-get install -y azure-cli
+
+# 5. Verify  
+az version
+
+
+######################################################################################
 kubectl get pod -A -o wide --field-selector spec.nodeName=<NODE_NAME>
 
 ################
