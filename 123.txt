@@ -1,3 +1,31 @@
+$RG = "rg-aci-demo"
+$LOC = "uksouth"
+$ACI_NAME = "aci-nexus-demo"
+$DNS_LABEL = "aci-nexus"
+
+$NEXUS_REGISTRY = "nexus.example.com:8083"
+$IMAGE = "nexus.example.com:8083/myrepo/myimage:1.0"
+$NEXUS_USER = "myuser"
+$NEXUS_PASSWORD = "mypassword"
+
+az group create `
+  --name $RG `
+  --location $LOC
+
+az container create `
+  --resource-group $RG `
+  --name $ACI_NAME `
+  --image $IMAGE `
+  --registry-login-server $NEXUS_REGISTRY `
+  --registry-username $NEXUS_USER `
+  --registry-password $NEXUS_PASSWORD `
+  --dns-name-label $DNS_LABEL `
+  --ports 80 `
+  --os-type Linux `
+  --restart-policy Always
+
+
+##########################################################################
 # 1. Install prerequisites  
 sudo apt-get update  
 sudo apt-get install -y ca-certificates curl apt-transport-https gnupg lsb-release  
