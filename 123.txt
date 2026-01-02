@@ -1,3 +1,48 @@
+📦 Python 3.9 packages (focal-updates)
+https://archive.ubuntu.com/ubuntu/pool/universe/p/python3.9/python3.9_3.9.5-3ubuntu0~20.04.1_amd64.deb
+https://archive.ubuntu.com/ubuntu/pool/universe/p/python3.9/python3.9-minimal_3.9.5-3ubuntu0~20.04.1_amd64.deb
+https://archive.ubuntu.com/ubuntu/pool/universe/p/python3.9/python3.9-venv_3.9.5-3ubuntu0~20.04.1_amd64.deb
+https://archive.ubuntu.com/ubuntu/pool/universe/p/python3.9/python3.9-dev_3.9.5-3ubuntu0~20.04.1_amd64.deb
+
+🧰 Support & library packages
+https://archive.ubuntu.com/ubuntu/pool/universe/p/python3.9/libpython3.9_3.9.5-3ubuntu0~20.04.1_amd64.deb
+https://archive.ubuntu.com/ubuntu/pool/universe/p/python3.9/libpython3.9-minimal_3.9.5-3ubuntu0~20.04.1_amd64.deb
+https://archive.ubuntu.com/ubuntu/pool/universe/p/python3.9/libpython3.9-stdlib_3.9.5-3ubuntu0~20.04.1_amd64.deb
+https://archive.ubuntu.com/ubuntu/pool/universe/p/python3.9/libpython3.9-dev_3.9.5-3ubuntu0~20.04.1_amd64.deb
+
+📌 Optional extras
+https://archive.ubuntu.com/ubuntu/pool/universe/p/python3.9/python3.9-dbg_3.9.5-3ubuntu0~20.04.1_amd64.deb
+https://archive.ubuntu.com/ubuntu/pool/universe/p/python3.9/python3.9-examples_3.9.5-3ubuntu0~20.04.1_all.deb
+
+
+✔ These match the files listed in the official Ubuntu focal pool directory. 
+Ubuntu Archive
+
+How to download with wget
+
+Example:
+
+wget https://archive.ubuntu.com/ubuntu/pool/universe/p/python3.9/python3.9_3.9.5-3ubuntu0~20.04.1_amd64.deb
+
+
+Then install them together:
+
+sudo dpkg -i *.deb
+sudo apt -f install
+
+
+Make sure you include dependencies (libpython3.9*), or use apt install python3.9 instead. 
+Ubuntu Archive
+
+Tip: Easiest install (recommended)
+
+Instead of manually downloading, you can install Python 3.9 using APT and enabled repositories:
+
+sudo apt update
+sudo apt install python3.9 python3.9-venv python3.9-dev
+
+
+#############################################################################################
 $RG = "rg-aci-demo"
 $LOC = "uksouth"
 $ACI_NAME = "aci-nexus-demo"
