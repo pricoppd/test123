@@ -1,3 +1,5 @@
+
+/bin/sh -c "echo -e '[openssl_init]\nssl_conf = ssl_sect\n\n[ssl_sect]\nsystem_default = system_default_sect\n\n[system_default_sect]\nOptions = IgnoreUnexpectedEOF' > /tmp/openssl.cnf && export OPENSSL_CONF=/tmp/openssl.cnf && ./start.sh"
 Name	Value	Purpose
 GIT_SSL_NO_VERIFY	true	Tells Git to ignore SSL errors (if the agent uses Git).
 NODE_TLS_REJECT_UNAUTHORIZED	0	If the agent is Node.js-based, this bypasses SSL validation.
