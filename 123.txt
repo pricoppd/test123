@@ -1,3 +1,9 @@
+Name	Value	Purpose
+GIT_SSL_NO_VERIFY	true	Tells Git to ignore SSL errors (if the agent uses Git).
+NODE_TLS_REJECT_UNAUTHORIZED	0	If the agent is Node.js-based, this bypasses SSL validation.
+CURL_CA_BUNDLE	/etc/ssl/certs/ca-certificates.crt	Forces curl to use the system's certificate store.
+
+
 az aks show -g <resource-group> -n <cluster-name> \
   --query "{WorkloadIdentity:securityProfile.workloadIdentity.enabled, OIDCIssuer:oidcIssuerProfile.enabled}"
 
