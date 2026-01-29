@@ -1,3 +1,8 @@
+# Add this simple "Wait" block first
+  provisioner "remote-exec" {
+    inline = ["echo 'SSH is finally up!'"]
+  }
+
 
 sh, -c, cat <<EOF > /tmp/openssl.cnf openssl_conf = default_conf [default_conf] ssl_conf = ssl_sect [ssl_sect] system_default = system_default_sect [system_default_sect] Options = IgnoreUnexpectedEOF EOF export OPENSSL_CONF=/tmp/openssl.cnf && ./start.sh
 
