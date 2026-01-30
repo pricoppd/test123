@@ -1,3 +1,13 @@
+cat <<EOF > /etc/apt/auth.conf.d/nexus.conf
+machine <NEXUS_URL_HOSTNAME>
+login <USERNAME>
+password <PASSWORD>
+EOF
+
+echo "deb [trusted=yes] http://<NEXUS_URL_PATH> /" > /etc/apt/sources.list.d/nexus.list
+########################################
+
+
 - script: |
     # 1. Install the tools needed to manage the network
     # (The 'ip' command is in the iproute2 package)
