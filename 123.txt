@@ -1,3 +1,21 @@
+- script: |
+    # 1. Install the tools needed to manage the network
+    # (The 'ip' command is in the iproute2 package)
+    apt-get update && apt-get install -y iproute2
+    
+    # 2. Lower the MTU to 1350 bytes
+    # This leaves plenty of room for Azure's 'encapsulation' headers
+    ip link set dev eth0 mtu 1350
+    
+    # 3. Verify the change
+    echo "Current MTU is:"
+    ip link show eth0 | grep mtu
+  displayName: 'Lower MTU for SSH Stability'
+
+
+#####################
+
+
 resource "azurerm_virtual_machine_extension" "enable_ssh" {
   name                 = "enable_ssh"
   virtual_machine_id   = azurerm_linux_virtual_machine.base_vm.id
