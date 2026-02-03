@@ -1,3 +1,6 @@
+https://ubuntu.pkgs.org/22.04/ubuntu-updates-main-arm64/libkrb5support0_1.19.2-2ubuntu0.7_arm64.deb.html
+######################################
+
 cat <<EOF > /etc/apt/auth.conf.d/nexus.conf
 machine <NEXUS_URL_HOSTNAME>
 login <USERNAME>
