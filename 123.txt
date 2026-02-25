@@ -1,3 +1,153 @@
+#!/bin/bash
+# =============================================================================
+# Script: copy-nexus-to-acr.sh
+# Description: Copies Docker images from Sonatype Nexus (private Docker registry)
+#              to Azure Container Registry (ACR) using:
+#                - Nexus username/password for source authentication
+#                - Azure Managed Identity (system-assigned by default) for ACR
+#              The copy is performed server-side by ACR (no local Docker daemon,
+#              no docker pull/tag/push required).
+# 
+# Prerequisites:
+#   - Azure CLI installed and in PATH
+#   - The Azure resource running this script has a Managed Identity with
+#     "AcrPush" (or Contributor) role assigned on the target ACR
+#   - Nexus Docker repository must support Docker Registry HTTP API V2 and
+#     RFC 7233 (byte-range requests) – most modern Nexus setups do.
+#   - Environment variables must be set (use Azure Key Vault, GitHub Secrets,
+#     Azure Automation variables, etc. for secrets in production)
+#
+# Usage:
+#   export NEXUS_REGISTRY="nexus.example.com:8083"          # Login server + port
+#   export NEXUS_USERNAME="nexus-user"
+#   export NEXUS_PASSWORD="nexus-password"
+#   export ACR_NAME="myacr"
+#   export IMAGES_TO_COPY="myrepo/nginx:1.23 myapp/api:v2.1.0 library/redis:latest"
+#   ./copy-nexus-to-acr.sh
+#
+#   (For user-assigned managed identity, edit the az login line below)
+# =============================================================================
+
+set -euo pipefail
+
+# ----------------------------------------------------------------------------
+# Validate required environment variables
+# ----------------------------------------------------------------------------
+: "${NEXUS_REGISTRY:?NEXUS_REGISTRY is required (e.g. nexus.example.com:8083)}"
+: "${NEXUS_USERNAME:?NEXUS_USERNAME is required}"
+: "${NEXUS_PASSWORD:?NEXUS_PASSWORD is required}"
+: "${ACR_NAME:?ACR_NAME is required}"
+: "${IMAGES_TO_COPY:?IMAGES_TO_COPY is required (space-separated list of images)}"
+
+echo "=== Starting Nexus → ACR import using server-side copy ==="
+echo "Target ACR     : ${ACR_NAME}"
+echo "Source Nexus   : ${NEXUS_REGISTRY}"
+echo "Images to copy : ${IMAGES_TO_COPY}"
+echo "Using Managed Identity for ACR authentication"
+echo "------------------------------------------------------------"
+
+# ----------------------------------------------------------------------------
+# Login to Azure with Managed Identity
+# ----------------------------------------------------------------------------
+# System-assigned: az login --identity
+# User-assigned:   az login --identity --client-id <client-id>
+#                  or az login --identity -u <resource-id>
+echo "Logging into Azure with Managed Identity..."
+az login --identity --output none
+echo "✅ Azure login successful"
+
+# ----------------------------------------------------------------------------
+# Import each image (server-side copy)
+# ----------------------------------------------------------------------------
+for image in ${IMAGES_TO_COPY}; do
+  SOURCE="${NEXUS_REGISTRY}/${image}"
+  
+  echo "Importing: ${SOURCE} → ${ACR_NAME}/${image} ..."
+
+  az acr import \
+    --name "${ACR_NAME}" \
+    --source "${SOURCE}" \
+    --username "${NEXUS_USERNAME}" \
+    --password "${NEXUS_PASSWORD}" \
+    --force \
+    --output none
+
+  echo "✅ Imported ${image}"
+done
+
+echo "------------------------------------------------------------"
+echo "🎉 All images have been successfully copied from Nexus to ACR!"
+echo "   You can now use them as ${ACR_NAME}.azurecr.io/<image>"
+echo "   Monitor import status in the Azure Portal under your ACR → Tasks/Imports if needed."
+#####################################################################################
+
+# azure-pipelines.yml  (example)
+
+trigger:
+  - main
+
+pool:
+  vmImage: 'ubuntu-latest'   # or windows-latest if you prefer PowerShell
+
+variables:
+  - group: your-nexus-credentials-group   # ← Variable Group name from Library
+    # Assumes it contains:
+    #   NEXUS_USERNAME     (non-secret or secret)
+    #   NEXUS_PASSWORD     (secret)
+    #   NEXUS_REGISTRY     (e.g. nexus.yourcompany.com:8083)  ← optional, can be here too
+  - name: ACR_NAME
+    value: 'yourcompanyacr'               # or put in variable group too
+  - name: IMAGES_TO_COPY
+    value: 'myrepo/nginx:1.23 myapp/api:v2.1.0 library/redis:latest'   # space separated
+
+steps:
+  - checkout: self
+
+  - task: AzureCLI@2
+    displayName: 'Import images from Nexus → ACR (server-side)'
+    inputs:
+      azureSubscription: 'your-azure-service-connection'   # must have AcrPush or Contributor on target ACR
+      scriptType: 'bash'
+      scriptLocation: 'inlineScript'
+      inlineScript: |
+        # ────────────────────────────────────────────────────────────────
+        #  az acr import – uses managed identity of the pipeline agent
+        #  Nexus credentials come from variable group → $(NEXUS_...)
+        # ────────────────────────────────────────────────────────────────
+
+        set -euo pipefail
+
+        echo "Target ACR       : $(ACR_NAME)"
+        echo "Source Nexus      : $(NEXUS_REGISTRY)"
+        echo "Images to import  : $(IMAGES_TO_COPY)"
+        echo "Using pipeline identity for ACR push"
+
+        # Optional: show that secrets are available (never log real secrets!)
+        # echo "Username length   : ${#NEXUS_USERNAME}"
+        # echo "Password length   : ${#NEXUS_PASSWORD}"
+
+        for image in $(IMAGES_TO_COPY); do
+          SOURCE_IMAGE="$(NEXUS_REGISTRY)/${image}"
+
+          echo "──────────────────────────────────────"
+          echo "Importing → ${SOURCE_IMAGE}"
+
+          az acr import \
+            --name "$(ACR_NAME)" \
+            --source "${SOURCE_IMAGE}" \
+            --username "$(NEXUS_USERNAME)" \
+            --password "$(NEXUS_PASSWORD)" \
+            --force \
+            --output none
+
+          echo "Imported: ${image} → $(ACR_NAME).azurecr.io/${image}"
+        done
+
+        echo "──────────────────────────────────────"
+        echo "All images imported successfully"
+
+
+############################################################################
 SUBSCRIPTION_ID="<subscription-id>"
 RESOURCE_GROUP="<resource-group-name>"
 IDENTITY_NAME="<managed-identity-name>"
